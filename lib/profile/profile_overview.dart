@@ -11,13 +11,39 @@ import '../widgets/badged_container.dart';
 import '../widgets/text_outlined_button.dart';
 import '../widgets/container_label.dart';
 import '../widgets/profile_dummy.dart';
-import '../../service/mongo_service.dart'; // Import your MongoDB service file
-// Import your login session class
+import '../../service/mongo_service.dart';
+import '../profile/profile_verification.dart';
+import '../profile/edit_profile.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
-class ProfileOverview extends StatelessWidget {
+class ProfileOverview extends StatefulWidget {
   final String sessionId;
 
-  const ProfileOverview({Key? key, required this.sessionId}) : super(key: key);
+  ProfileOverview({required this.sessionId});
+
+  @override
+  _ProfileOverviewState createState() => _ProfileOverviewState();
+}
+
+class _ProfileOverviewState extends State<ProfileOverview> {
+  String? profilePictureUrl;
+
+  Future<void> _uploadProfilePicture() async {
+    final picker = ImagePicker();
+    final XFile? pickedFile =
+        await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final File file = File(pickedFile.path);
+
+      // Update the profile picture URL
+      setState(() {
+        profilePictureUrl =
+            file.path; // Set the profile picture URL to the local file path
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,13 +70,42 @@ class ProfileOverview extends StatelessWidget {
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          Align(
-                            alignment: Alignment.center,
-                            child: ProfileDummy(
-                              color: HexColor.fromHex("f19494"),
-                              dummyType: ProfileDummyType.Icon,
-                              scale: 3.0,
+                          SizedBox(height: 20.0),
+                          // Display the profile picture or a default image
+                          Container(
+                            width: 150.0,
+                            height: 150.0,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              image: DecorationImage(
+                                image: profilePictureUrl != null
+                                    ? FileImage(
+                                        File(
+                                            profilePictureUrl!)) as ImageProvider<
+                                        Object> // Cast to ImageProvider<Object>
+                                    : NetworkImage(user['profilePictureUrl'] ??
+                                        ''), // Use the default profile picture URL
+                                fit: BoxFit.cover,
+                              ),
                             ),
+                            child: InkWell(
+                              onTap: () {
+                                // Implement the logic to upload a new profile picture
+                                // You can use image picker libraries for this purpose.
+                              },
+                              child: profilePictureUrl == null
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 100.0,
+                                      color: Colors.grey,
+                                    )
+                                  : null, // Display a default icon if there's no profile picture
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: _uploadProfilePicture,
+                            child: Text('Upload Profile Picture'),
                           ),
                           Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -72,10 +127,24 @@ class ProfileOverview extends StatelessWidget {
                           ),
                           Padding(
                             padding: const EdgeInsets.all(15.0),
-                            child: OutlinedButtonWithText(
-                              width: 150,
-                              content: "Edit Profile",
-                              onPressed: () {},
+                            child: Column(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () {
+                                    // Navigate to the EditProfilePage when the button is pressed
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => EditProfilePage(),
+                                      ),
+                                    );
+                                  },
+                                  child: Text('Edit Profile'),
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ), // Add some spacing between buttons
+                              ],
                             ),
                           ),
                           AppSpaces.verticalSpace20,
@@ -119,15 +188,26 @@ class ProfileOverview extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                PrimaryProgressButton(
-                                  width: 90,
-                                  height: 40,
-                                  label: "Verify",
-                                  textStyle: GoogleFonts.lato(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                                ElevatedButton(
+                                  onPressed: () {
+                                    // Move the verification logic here
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            VerificationPage(),
+                                      ),
+                                    );
+                                  },
+                                  child: Text('Verify'),
+                                  style: ElevatedButton.styleFrom(
+                                    primary: Colors
+                                        .blue, // Customize the button's color
+                                    onPrimary: Colors
+                                        .white, // Customize the text color
                                   ),
                                 ),
+
                                 //   AppSpaces.verticalSpace10,
                                 //   ContainerLabel(label: "Contact Number"),
                                 //   AppSpaces.verticalSpace10,

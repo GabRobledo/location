@@ -12,6 +12,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../profile/profile_overview.dart';
 import '../auth/login_page.dart';
+import '../transaction/mechanic_request.dart';
 
 class MechanicPage extends StatefulWidget {
   final String sessionId;
@@ -580,6 +581,24 @@ class _MechanicPageState extends State<MechanicPage> {
 - **Privacy Policy:** Review our privacy policy.
 - **Licenses:** View open-source licenses used in the app.
 ''';
+  void navigateToMechanicReviewPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MechanicReviewPage(
+          orderNumber: '12345',
+          customerName: 'John Doe',
+          customerAddress: '123 Main St',
+          comment: 'Some comment', // Provide a value for comment
+          fare: '50.00',
+          issue: 'Car trouble',
+          photo: 'url_to_photo',
+          distance: '5 miles',
+          paymentMethod: 'Credit Card',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -780,44 +799,6 @@ class _MechanicPageState extends State<MechanicPage> {
                                           ),
                                         ],
                                       ),
-                                      // SizedBox(height: 4),
-                                      // Row(
-                                      //   children: [
-                                      //     Icon(
-                                      //       Icons.location_on,
-                                      //       size: 15,
-                                      //       color: Colors.lightGreen,
-                                      //     ),
-                                      //     SizedBox(width: 4),
-                                      //     Text(
-                                      //       'Latitude: ${latitude != null ? latitude.toStringAsFixed(6) : 'Unknown'}',
-                                      //       maxLines: 1,
-                                      //       overflow: TextOverflow.ellipsis,
-                                      //       style: TextStyle(
-                                      //         color: Colors.grey[600],
-                                      //       ),
-                                      //     ),
-                                      //   ],
-                                      // ),
-                                      // SizedBox(height: 4),
-                                      // Row(
-                                      //   children: [
-                                      //     Icon(
-                                      //       Icons.location_on,
-                                      //       size: 15,
-                                      //       color: Colors.lightGreen,
-                                      //     ),
-                                      //     SizedBox(width: 4),
-                                      //     Text(
-                                      //       'Longitude: ${longitude != null ? longitude.toStringAsFixed(6) : 'Unknown'}',
-                                      //       maxLines: 1,
-                                      //       overflow: TextOverflow.ellipsis,
-                                      //       style: TextStyle(
-                                      //         color: Colors.grey[600],
-                                      //       ),
-                                      //     ),
-                                      //   ],
-                                      // ),
                                       SizedBox(height: 4),
                                       Text(
                                         'Address: ${address ?? 'Unknown'}',
@@ -855,7 +836,8 @@ class _MechanicPageState extends State<MechanicPage> {
                                       IconButton(
                                         icon: Icon(Icons.phone),
                                         onPressed: () {
-                                          callUser(user['phoneNumber']);
+                                          Navigator.pop(context);
+                                          navigateToMechanicReviewPage(context);
                                         },
                                       ),
                                       IconButton(

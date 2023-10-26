@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:raamb_app/chat/ChatContent/chat_message.dart';
+import 'package:raamb_app/chat/ChatList/chat_list.dart';
+import 'package:raamb_app/map/driver_map.dart';
+
 import '../drawer/terms_and_conditions.dart';
 import '../drawer/help_center.dart';
 import '../drawer/settings.dart';
@@ -23,10 +27,14 @@ import '../profile/profile_overview.dart';
 import '../pages/driver_page.dart';
 import '../transaction/transaction_list.dart';
 import '../drawer/favorites.dart';
+import '../map/driver_transaction.dart';
+import '../chat/chat.dart';
+import '../profile/profile_overview.dart';
 
 class DriverPage extends StatefulWidget {
   final String sessionId;
   final List<String> selectedVehicleTypes = [];
+  List<Map<String, dynamic>> filteredMechanicUsers = [];
 
   final TextEditingController _textController = TextEditingController();
 
@@ -417,10 +425,23 @@ class _DriverPageState extends State<DriverPage> {
 
     if (index == 1) {
       // Messages tab
-      _showChatDialog(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatPage(),
+        ),
+      );
     } else if (index == 2) {
       // Favorites tab
-      _showFavoritesPage(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MapPage(
+            sessionId: widget.sessionId,
+            mechanicUsers: widget.filteredMechanicUsers,
+          ),
+        ),
+      );
     } else if (index == 3) {
       // Profile tab
       _showProfile(widget.sessionId); // Replace _yourUserId with the user's ID
@@ -700,172 +721,197 @@ class _DriverPageState extends State<DriverPage> {
             },
           ),
           actions: [
-            IconButton(
-              icon: Icon(Icons.my_location_sharp),
-              onPressed: () {
-                if (latitude != null && longitude != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => FlutterMap(
-                        options: MapOptions(
-                          center: LatLng(latitude,
-                              longitude), // Use latitude and longitude here
-                          zoom: 18,
-                          maxZoom: 20,
-                        ),
-                        children: [
-                          TileLayer(
-                            urlTemplate:
-                                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                            subdomains: ['a', 'b', 'c'],
-                            userAgentPackageName: 'com.raamb_app.app',
-                          ),
-                          MarkerClusterLayerWidget(
-                            options: MarkerClusterLayerOptions(
-                              maxClusterRadius: 120,
-                              size: Size(40, 40),
-                              fitBoundsOptions: FitBoundsOptions(
-                                padding: EdgeInsets.all(50),
-                              ),
-                              markers: filteredMechanicUsers
-                                  .map((user) {
-                                    final location = user['location'];
-                                    final latitude = location != null
-                                        ? location['latitude'] as double?
-                                        : null;
-                                    final longitude = location != null
-                                        ? location['longitude'] as double?
-                                        : null;
+            // IconButton(
+            //   icon: Icon(Icons.my_location_sharp),
+            //   onPressed: () {
+            //     if (latitude != null && longitude != null) {
+            //       Navigator.push(
+            //         context,
+            //         MaterialPageRoute(
+            //           builder: (context) => FlutterMap(
+            //             options: MapOptions(
+            //               center: LatLng(latitude,
+            //                   longitude), // Use latitude and longitude here
+            //               zoom: 18,
+            //               maxZoom: 20,
+            //             ),
+            //             children: [
+            //               TileLayer(
+            //                 urlTemplate:
+            //                     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            //                 subdomains: ['a', 'b', 'c'],
+            //                 userAgentPackageName: 'com.raamb_app.app',
+            //               ),
+            //               MarkerClusterLayerWidget(
+            //                 options: MarkerClusterLayerOptions(
+            //                   maxClusterRadius: 120,
+            //                   size: Size(40, 40),
+            //                   fitBoundsOptions: FitBoundsOptions(
+            //                     padding: EdgeInsets.all(50),
+            //                   ),
+            //                   markers: filteredMechanicUsers
+            //                       .map((user) {
+            //                         final location = user['location'];
+            //                         final latitude = location != null
+            //                             ? location['latitude'] as double?
+            //                             : null;
+            //                         final longitude = location != null
+            //                             ? location['longitude'] as double?
+            //                             : null;
 
-                                    if (latitude != null && longitude != null) {
-                                      return Marker(
-                                        width: 40,
-                                        height: 40,
-                                        point: LatLng(latitude, longitude),
-                                        builder: (ctx) => Container(
-                                          child: Icon(
-                                            Icons.person_pin,
-                                            color: Colors.red,
-                                            size: 30,
-                                          ),
-                                        ),
-                                      );
-                                    } else {
-                                      // Handle cases where location data is missing or invalid
-                                      return null;
-                                    }
-                                  })
-                                  .whereType<Marker>()
-                                  .toList(),
-                              builder: (context, markers) {
-                                // Define how the cluster markers should be rendered here
-                                // For example, you can return a container with the number of markers
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    color: Colors.blue,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      markers.length.toString(),
-                                      style:
-                                          const TextStyle(color: Colors.white),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                } else {
-                  // Handle the case where latitude and longitude are not available
-                }
-              },
-            ),
+            //                         if (latitude != null && longitude != null) {
+            //                           return Marker(
+            //                             width: 40,
+            //                             height: 40,
+            //                             point: LatLng(latitude, longitude),
+            //                             builder: (ctx) => Container(
+            //                               child: Icon(
+            //                                 Icons.person_pin,
+            //                                 color: Colors.red,
+            //                                 size: 30,
+            //                               ),
+            //                             ),
+            //                           );
+            //                         } else {
+            //                           // Handle cases where location data is missing or invalid
+            //                           return null;
+            //                         }
+            //                       })
+            //                       .whereType<Marker>()
+            //                       .toList(),
+            //                   builder: (context, markers) {
+            //                     // Define how the cluster markers should be rendered here
+            //                     // For example, you can return a container with the number of markers
+            //                     return Container(
+            //                       decoration: BoxDecoration(
+            //                         borderRadius: BorderRadius.circular(20),
+            //                         color: Colors.blue,
+            //                       ),
+            //                       child: Center(
+            //                         child: Text(
+            //                           markers.length.toString(),
+            //                           style:
+            //                               const TextStyle(color: Colors.white),
+            //                         ),
+            //                       ),
+            //                     );
+            //                   },
+            //                 ),
+            //               ),
+            //             ],
+            //           ),
+            //         ),
+            //       );
+            //     } else {
+            //       // Handle the case where latitude and longitude are not available
+            //     }
+            //   },
+            // ),
           ],
         ),
         drawer: Drawer(
-          child: ListView(
-            key: ValueKey(userId ?? ['_id']),
-            padding: EdgeInsets.zero,
+          child: Column(
             children: [
-              DrawerHeader(
-                decoration: BoxDecoration(
-                  color: Colors.red, // Background color
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    UserAccountsDrawerHeader(
+                      accountName: Text(''),
+                      accountEmail: null, // Add email if available
+                      currentAccountPicture: CircleAvatar(
+                        backgroundColor: Colors.white,
+                        child:
+                            Icon(Icons.person), // Add user profile picture here
+                      ),
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.account_circle), // Icon for "Profile"
+                      title: Text('Profile'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showProfile(widget.sessionId);
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.star), // Icon for "Favorites"
+                      title: Text('Favorites'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showFavoritesPage(context);
+                        // Add your "Favorites" navigation logic here
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.history), // Icon for "Transactions"
+                      title: Text('Transactions'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TransactionHistoryPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    Divider(),
+                    Container(
+                      height: 1, // Set the height for the line
+                      decoration: BoxDecoration(
+                        color: Colors.grey, // Choose the color you prefer
+                      ),
+                    ),
+                    Divider(
+                      height: 20, // Adjust the height to make it bigger
+                      // Adjust the thickness
+                      // Change the color to blue or any other color you prefer
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.settings), // Icon for "Settings"
+                      title: Text('Settings'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SettingsPage()),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.help), // Icon for "Help Center"
+                      title: Text('Help Center'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => HelpCenterPage()),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(
+                          Icons.description), // Icon for "Terms and Conditions"
+                      title: Text('Terms and Conditions'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TermsAndConditionsPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                child: Text(
-                  userId ?? 'nothere',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ), // Content of the DrawerHeader
               ),
               ListTile(
-                title: Text('Profile'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showProfile(widget.sessionId);
-                  // Add your profile navigation logic here
-                },
-              ),
-              ListTile(
-                title: Text('Transactions'),
-                onTap: () {
-                  Navigator.pop(
-                      context); // Close the current screen if necessary
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => TransactionHistoryPage()),
-                  );
-                },
-              ),
-              ListTile(
-                title: Text('Settings'), // Add Settings option
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SettingsPage(),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                title: Text('Help Center'), // Add Help Center option
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HelpCenterPage(),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                title: Text(
-                    'Terms and Conditions'), // Add Terms and Conditions option
-                onTap: () {
-                  Navigator.pop(context); // Close the current dialog or drawer
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TermsAndConditionsPage(),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
+                leading: Icon(Icons.exit_to_app), // Icon for "Log-Out"
                 title: Text('Log-Out'),
                 onTap: () {
                   Navigator.pop(context);
                   _handleLogout();
-                  // Add your log-out logic here
-                  // Add your log-out logic here
                 },
               ),
             ],
@@ -1064,25 +1110,6 @@ class _DriverPageState extends State<DriverPage> {
                                         ),
                                       ],
                                     ),
-                                    // SizedBox(height: 4),
-                                    // Row(
-                                    //   children: [
-                                    //     Icon(
-                                    //       Icons.location_searching,
-                                    //       size: 15,
-                                    //       color: Colors.lightGreen,
-                                    //     ),
-                                    //     SizedBox(width: 4),
-                                    //     Text(
-                                    //       'Distance: ${(latitude != null && longitude != null) ? calculateDistance(_locationData?.latitude, _locationData?.longitude, latitude, longitude).toStringAsFixed(2) + ' meters' : 'Estimated'}',
-                                    //       maxLines: 1,
-                                    //       overflow: TextOverflow.ellipsis,
-                                    //       style: TextStyle(
-                                    //         color: Colors.grey[600],
-                                    //       ),
-                                    //     ),
-                                    //   ],
-                                    // ),
                                     SizedBox(height: 4),
                                     Text(
                                       ' ${address ?? 'Unknown'}',
@@ -1134,7 +1161,16 @@ class _DriverPageState extends State<DriverPage> {
                                       IconButton(
                                         icon: Icon(Icons.message),
                                         onPressed: () {
-                                          callUser(user['phoneNumber']);
+                                          // Replace 'ChatPage' with the actual name of your chat page class.
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => ChatMessage(
+                                                messageContent: "fds",
+                                                messageType: "sender",
+                                              ),
+                                            ),
+                                          );
                                         },
                                       ),
                                       IconButton(
@@ -1143,102 +1179,8 @@ class _DriverPageState extends State<DriverPage> {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (context) => FlutterMap(
-                                                options: MapOptions(
-                                                  center: LatLng(latitude!,
-                                                      longitude!), // Initial map center coordinates
-                                                  zoom:
-                                                      13.0, // Initial zoom level
-                                                ),
-                                                children: [
-                                                  TileLayer(
-                                                    urlTemplate:
-                                                        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                                                    subdomains: ['a', 'b', 'c'],
-                                                    userAgentPackageName:
-                                                        'com.raamb_app.app',
-                                                  ),
-                                                  MarkerLayer(
-                                                    markers: [
-                                                      Marker(
-                                                        point: LatLng(latitude,
-                                                            longitude),
-                                                        width: 80,
-                                                        height: 80,
-                                                        builder: (context) =>
-                                                            Icon(
-                                                                Icons.pin_drop),
-                                                      ),
-                                                      Marker(
-                                                        point: LatLng(
-                                                            _locationData
-                                                                    ?.latitude ??
-                                                                0,
-                                                            _locationData
-                                                                    ?.longitude ??
-                                                                0), // Marker for the ending point
-                                                        width: 80,
-                                                        height: 80,
-                                                        builder: (context) =>
-                                                            Icon(
-                                                                Icons.pin_drop),
-                                                      ),
-                                                    ],
-                                                  ),
-
-                                                  // (
-                                                  //     // Customize the marker icon
-                                                  //     ) {
-                                                  //   showDialog(
-                                                  //       context:
-                                                  //           context,
-                                                  //       builder:
-                                                  //           (BuildContext
-                                                  //               context) {
-                                                  //         return AlertDialog(
-                                                  //           title:
-                                                  //               Text('Location Info'),
-                                                  //           content:
-                                                  //               Text('This is the selected location.'),
-                                                  //           actions: [
-                                                  //             TextButton(
-                                                  //               child: Text('Close'),
-                                                  //               onPressed: () {
-                                                  //                 Navigator.of(context).pop();
-                                                  //               },
-                                                  //             ),
-                                                  //           ],
-                                                  //         );
-                                                  //       });
-                                                  // }
-                                                  //               ),
-                                                  //                   ),
-                                                  //     )
-                                                  //   ],
-                                                  // ),
-                                                  PolylineLayer(
-                                                    polylines: [
-                                                      Polyline(
-                                                        points: [
-                                                          LatLng(
-                                                              _locationData
-                                                                      ?.latitude ??
-                                                                  0,
-                                                              _locationData
-                                                                      ?.longitude ??
-                                                                  0), // Start point
-                                                          LatLng(latitude,
-                                                              longitude)
-                                                        ], // Use polylineCoordinates directly
-                                                        color: Colors
-                                                            .blue, // Color of the polyline
-                                                        strokeWidth:
-                                                            3.0, // Width of the polyline
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
+                                              builder: (context) =>
+                                                  DriverTransactionPage(), // Navigate to DriverTransactionPage
                                             ),
                                           );
                                         },
@@ -1263,8 +1205,8 @@ class _DriverPageState extends State<DriverPage> {
               label: 'Messages',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.favorite),
-              label: 'Favorites',
+              icon: Icon(Icons.location_on),
+              label: 'Map',
             ),
             // BottomNavigationBarItem(
             //   icon: Icon(Icons.person),
