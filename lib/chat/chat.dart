@@ -18,8 +18,6 @@ class ChatUsers {
 }
 
 class ChatPage extends StatefulWidget {
-  
-  
   @override
   _ChatPageState createState() => _ChatPageState();
 }
@@ -68,23 +66,23 @@ class _ChatPageState extends State<ChatPage> {
                       height: 30,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(30),
-                        color: Colors.pink[50],
+                        color: Colors.pink[0],
                       ),
                       child: Row(
                         children: <Widget>[
-                          Icon(
-                            Icons.add,
-                            color: Colors.pink,
-                            size: 20,
-                          ),
-                          SizedBox(
-                            width: 2,
-                          ),
-                          Text(
-                            "Add New",
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
+                          // Icon(
+                          //   Icons.add,
+                          //   color: Colors.pink,
+                          //   size: 20,
+                          // ),
+                          // SizedBox(
+                          //   width: 2,
+                          // ),
+                          // Text(
+                          //   "Add New",
+                          //   style: TextStyle(
+                          //       fontSize: 14, fontWeight: FontWeight.bold),
+                          // ),
                         ],
                       ),
                     ),

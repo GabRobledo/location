@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class MechanicReviewPage extends StatelessWidget {
+class MechanicReviewPage extends StatefulWidget {
   final String orderNumber;
   final String customerName;
   final String customerAddress;
@@ -24,6 +24,29 @@ class MechanicReviewPage extends StatelessWidget {
   });
 
   @override
+  _MechanicReviewPageState createState() => _MechanicReviewPageState();
+}
+
+class _MechanicReviewPageState extends State<MechanicReviewPage> {
+  int _selectedIndex = 0;
+  TextEditingController searchController = TextEditingController();
+  String? orderNumber;
+  String? customerName;
+  String? customerAddress;
+  String? comment;
+  String? fare;
+  String? issue;
+  String? photo;
+  String? distance;
+  String? paymentMethod;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -35,6 +58,20 @@ class MechanicReviewPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  labelText: 'Search',
+                  hintText: 'Search for something...',
+                  prefixIcon: Icon(Icons.search),
+                )),
+            SizedBox(
+                height:
+                    16.0), // Add some spacing between search bar and content
+            Container(
+              padding: EdgeInsets.all(16.0),
+              decoration: BoxDecoration(),
+            ),
             Container(
               padding: EdgeInsets.all(16.0),
               decoration: BoxDecoration(
@@ -80,15 +117,15 @@ class MechanicReviewPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Fare: $fare', style: TextStyle(fontSize: 20.0)),
+                      // Text('Fare: $fare', style: TextStyle(fontSize: 20.0)),
                       Text('Issue: $issue', style: TextStyle(fontSize: 20.0)),
                     ],
                   ),
-                  SizedBox(height: 20.0),
-                  Text(
-                    'Payment Method: $paymentMethod',
-                    style: TextStyle(fontSize: 20.0),
-                  ),
+                  // SizedBox(height: 20.0),
+                  // Text(
+                  //   'Payment Method: $paymentMethod',
+                  //   style: TextStyle(fontSize: 20.0),
+                  // ),
                   Text(
                     'Comment: $comment',
                     style: TextStyle(
@@ -133,6 +170,30 @@ class MechanicReviewPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.message),
+            label: 'Messages',
+          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.favorite),
+          //   label: 'Favorites',
+          // ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        unselectedItemColor: Colors.grey,
+        selectedItemColor: Colors.red,
+        onTap: _onItemTapped,
       ),
     );
   }

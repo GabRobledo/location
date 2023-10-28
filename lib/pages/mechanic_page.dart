@@ -13,6 +13,11 @@ import 'package:latlong2/latlong.dart';
 import '../profile/profile_overview.dart';
 import '../auth/login_page.dart';
 import '../transaction/mechanic_request.dart';
+import '../transaction/transaction_list.dart';
+import '../drawer/favorites.dart';
+import '../drawer/settings.dart';
+import '../drawer/help_center.dart';
+import '../drawer/terms_and_conditions.dart';
 
 class MechanicPage extends StatefulWidget {
   final String sessionId;
@@ -600,13 +605,20 @@ class _MechanicPageState extends State<MechanicPage> {
     );
   }
 
+  void _showFavoritesPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FavoritesPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
         length: 4, // Number of tabs
         child: Scaffold(
           appBar: AppBar(
-            title: Text('User Location'),
+            title: Text(_locationName ?? ''),
             leading: Builder(
               builder: (BuildContext context) {
                 return IconButton(
@@ -618,65 +630,114 @@ class _MechanicPageState extends State<MechanicPage> {
               },
             ),
             actions: [
-              IconButton(
-                icon: Icon(Icons.book),
-                onPressed: () {
-                  // Add the action for the logbook icon here
-                },
-              ),
+              // IconButton(
+              //   icon: Icon(Icons.book),
+              //   onPressed: () {
+              //     // Add the action for the logbook icon here
+              //   },
+              // ),
             ],
           ),
           drawer: Drawer(
-            child: ListView(
-              padding: EdgeInsets.zero,
+            child: Column(
               children: [
-                DrawerHeader(
-                  decoration: BoxDecoration(
-                    color: Colors.red, // Background color
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      UserAccountsDrawerHeader(
+                        accountName: Text(''),
+                        accountEmail: null, // Add email if available
+                        currentAccountPicture: CircleAvatar(
+                          backgroundColor: Colors.white,
+                          child: Icon(
+                              Icons.person), // Add user profile picture here
+                        ),
+                      ),
+                      ListTile(
+                        leading:
+                            Icon(Icons.account_circle), // Icon for "Profile"
+                        title: Text('Profile'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showProfile(widget.sessionId);
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.star), // Icon for "Favorites"
+                        title: Text('Favorites'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showFavoritesPage(context);
+                          // Add your "Favorites" navigation logic here
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.history), // Icon for "Transactions"
+                        title: Text('Transactions'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TransactionHistoryPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      Divider(),
+                      Container(
+                        height: 1, // Set the height for the line
+                        decoration: BoxDecoration(
+                          color: Colors.grey, // Choose the color you prefer
+                        ),
+                      ),
+                      Divider(
+                        height: 20, // Adjust the height to make it bigger
+                        // Adjust the thickness
+                        // Change the color to blue or any other color you prefer
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.settings), // Icon for "Settings"
+                        title: Text('Settings'),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => SettingsPage()),
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.help), // Icon for "Help Center"
+                        title: Text('Help Center'),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => HelpCenterPage()),
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(Icons
+                            .description), // Icon for "Terms and Conditions"
+                        title: Text('Terms and Conditions'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TermsAndConditionsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                  child: Text(user ?? 'UserID'), // Content of the DrawerHeader
                 ),
                 ListTile(
-                  title: Text('Profile'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showProfile(widget.sessionId);
-                    // Add your profile navigation logic here
-                  },
-                ),
-                ListTile(
-                  title: Text('Transactions'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showTransactionHistory();
-                  },
-                ),
-                ListTile(
-                  title: Text('Settings'), // Add Settings option
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showSettingsDialog;
-                    // Add your settings navigation logic here
-                  },
-                ),
-                ListTile(
-                  title: Text('Help Center'), // Add Help Center option
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showHelpCenterDialog;
-                    // Add your help center navigation logic here
-                  },
-                ),
-                ListTile(
-                  title: Text(
-                      'Terms and Conditions'), // Add Terms and Conditions option
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showTermsAndConditionsDialog;
-                    // Add your terms and conditions navigation logic here
-                  },
-                ),
-                ListTile(
+                  leading: Icon(Icons.exit_to_app), // Icon for "Log-Out"
                   title: Text('Log-Out'),
                   onTap: () {
                     Navigator.pop(context);
@@ -696,10 +757,10 @@ class _MechanicPageState extends State<MechanicPage> {
                 icon: Icon(Icons.message),
                 label: 'Messages',
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.favorite),
-                label: 'Favorites',
-              ),
+              // BottomNavigationBarItem(
+              //   icon: Icon(Icons.favorite),
+              //   label: 'Favorites',
+              // ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.person),
                 label: 'Profile',
@@ -749,146 +810,204 @@ class _MechanicPageState extends State<MechanicPage> {
                                   ? location['city'] as String?
                                   : null;
 
-                              return Card(
-                                elevation: 2,
-                                child: ListTile(
-                                  key: ValueKey(user[
-                                      '_id']), // Assign a unique key based on the user ID
-                                  title: Text(
-                                    ': ${user['firstName'] ?? 'Unknown'} ${user['lastName'] ?? ''}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.phone,
-                                              size: 15,
-                                              color: Colors.lightBlue),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'Phone: ${user['phoneNumber'] ?? 'Unknown'}',
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                          Spacer(),
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.green,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              'Online',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12,
+                              return Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Card(
+                                      elevation: 2,
+                                      child: Padding(
+                                          padding: const EdgeInsets.all(10.0),
+                                          child: Column(children: [
+                                            ListTile(
+                                              key: ValueKey(user[
+                                                  '_id']), // Assign a unique key based on the user ID
+                                              title: Text(
+                                                ' ${user['firstName'] ?? 'Unknown'} ${user['lastName'] ?? ''}',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        'Address: ${address ?? 'Unknown'}',
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                      SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.location_searching,
-                                            size: 15,
-                                            color: Colors.lightGreen,
-                                          ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'Distance: ${latitude != null && longitude != null ? calculateDistance(_locationData?.latitude, _locationData?.longitude, latitude, longitude).toStringAsFixed(2) : 'Unknown'} meters',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize
-                                        .min, // To align the IconButton and Icon
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(Icons.phone),
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                          navigateToMechanicReviewPage(context);
-                                        },
-                                      ),
-                                      IconButton(
-                                        icon: Icon(Icons.map),
-                                        onPressed: () {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      FlutterMap(
-                                                        options: MapOptions(
-                                                          center: LatLng(
-                                                              latitude!,
-                                                              longitude!), // Initial map center coordinates
-                                                          zoom:
-                                                              13.0, // Initial zoom level
-                                                        ),
+                                              subtitle: Padding(
+                                                padding: const EdgeInsets
+                                                        .symmetric(
+                                                    horizontal:
+                                                        1), // Adjust the margin here
+                                                child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      SizedBox(height: 4),
+                                                      Row(
                                                         children: [
-                                                          TileLayer(
-                                                            urlTemplate:
-                                                                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                                                            subdomains: [
-                                                              'a',
-                                                              'b',
-                                                              'c'
-                                                            ],
-                                                            userAgentPackageName:
-                                                                'com.raamb_app.app',
+                                                          Icon(Icons.phone,
+                                                              size: 15,
+                                                              color: Colors
+                                                                  .lightBlue),
+                                                          SizedBox(width: 5),
+                                                          Text(
+                                                            '${user['phoneNumber'] ?? 'Unknown'}',
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .grey[600],
+                                                            ),
                                                           ),
-                                                          MarkerLayer(
-                                                            markers: [
-                                                              Marker(
-                                                                point: LatLng(
-                                                                    latitude,
-                                                                    longitude),
-                                                                width: 80,
-                                                                height: 80,
-                                                                builder: (context) =>
-                                                                    Icon(Icons
-                                                                        .pin_drop),
-                                                              ),
-                                                            ],
+                                                          // Spacer(),
+                                                          // Container(
+                                                          //   padding: EdgeInsets
+                                                          //       .symmetric(
+                                                          //     horizontal: 4,
+                                                          //     vertical: 2,
+                                                          //   ),
+                                                          //   decoration:
+                                                          //       BoxDecoration(
+                                                          //     color:
+                                                          //         Colors.green,
+                                                          //     borderRadius:
+                                                          //         BorderRadius
+                                                          //             .circular(
+                                                          //                 4),
+                                                          //   ),
+                                                          //   child: Text(
+                                                          //     'Online',
+                                                          //     style: TextStyle(
+                                                          //       color: Colors
+                                                          //           .white,
+                                                          //       fontSize: 12,
+                                                          //     ),
+                                                          //   ),
+                                                          // ),
+                                                        ],
+                                                      ),
+                                                      SizedBox(height: 4),
+                                                      Text(
+                                                        '${address ?? 'Unknown Address'}',
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style: TextStyle(
+                                                          color:
+                                                              Colors.grey[600],
+                                                        ),
+                                                      ),
+                                                      SizedBox(height: 4),
+                                                      Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .location_searching,
+                                                            size: 15,
+                                                            color: Colors
+                                                                .lightGreen,
+                                                          ),
+                                                          SizedBox(width: 4),
+                                                          Text(
+                                                            '${latitude != null && longitude != null ? calculateDistance(_locationData?.latitude, _locationData?.longitude, latitude, longitude).toStringAsFixed(2) : 'Unknown'} meters',
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .grey[600],
+                                                            ),
                                                           ),
                                                         ],
-                                                      )));
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
+                                                      ),
+                                                    ]),
+                                              ),
+                                              trailing: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  ElevatedButton(
+                                                    // Use ElevatedButton for "Acrcept" button
+                                                    onPressed: () {
+                                                      // Handle Accept logic here
+                                                      // For now, just print a message
+                                                      print('Accepted');
+                                                    },
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      primary: Colors.green,
+                                                    ),
+                                                    child: Text('Accept'),
+                                                  ),
+                                                  SizedBox(
+                                                      width:
+                                                          10), // Add spacing between buttons
+                                                  ElevatedButton(
+                                                    // Use TextButton for "Decline" button
+                                                    onPressed: () {
+                                                      // Handle Decline logic here
+                                                      // For now, just print a message
+                                                      print('Declined');
+                                                    },
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      primary: Colors.red,
+                                                    ),
+
+                                                    child: Text('Decline'),
+                                                  ),
+                                                  // IconButton(
+                                                  //   icon: Icon(Icons.phone),
+                                                  //   onPressed: () {
+                                                  //     Navigator.pop(context);
+                                                  //     navigateToMechanicReviewPage(
+                                                  //         context);
+                                                  //   },
+                                                  // ),
+                                                  // IconButton(
+                                                  //   icon: Icon(Icons.map),
+                                                  //   onPressed: () {
+                                                  //     Navigator.push(
+                                                  //         context,
+                                                  //         MaterialPageRoute(
+                                                  //             builder:
+                                                  //                 (context) =>
+                                                  //                     FlutterMap(
+                                                  //                       options:
+                                                  //                           MapOptions(
+                                                  //                         center: LatLng(
+                                                  //                             latitude!,
+                                                  //                             longitude!), // Initial map center coordinates
+                                                  //                         zoom:
+                                                  //                             13.0, // Initial zoom level
+                                                  //                       ),
+                                                  //                       children: [
+                                                  //                         TileLayer(
+                                                  //                           urlTemplate:
+                                                  //                               "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                                                  //                           subdomains: [
+                                                  //                             'a',
+                                                  //                             'b',
+                                                  //                             'c'
+                                                  //                           ],
+                                                  //                           userAgentPackageName:
+                                                  //                               'com.raamb_app.app',
+                                                  //                         ),
+                                                  //                         MarkerLayer(
+                                                  //                           markers: [
+                                                  //                             Marker(
+                                                  //                               point: LatLng(latitude, longitude),
+                                                  //                               width: 80,
+                                                  //                               height: 80,
+                                                  //                               builder: (context) => Icon(Icons.pin_drop),
+                                                  //                             ),
+                                                  //                           ],
+                                                  //                         ),
+                                                  //                       ],
+                                                  //                     )
+                                                  //                     )
+                                                  //                     );
+                                                  //   },
+                                                  // ),
+                                                ],
+                                              ),
+                                            ),
+                                          ]))));
                             }),
                       )
                     : Center(child: Text('No Drivers found')),

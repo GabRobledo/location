@@ -202,7 +202,7 @@ class _ProfileOverviewState extends State<ProfileOverview> {
                                   child: Text('Verify'),
                                   style: ElevatedButton.styleFrom(
                                     primary: Colors
-                                        .blue, // Customize the button's color
+                                        .red, // Customize the button's color
                                     onPrimary: Colors
                                         .white, // Customize the text color
                                   ),
@@ -257,15 +257,15 @@ class _ProfileOverviewState extends State<ProfileOverview> {
                               ],
                             ),
                           ),
-                          AppSpaces.verticalSpace20,
-                          ContainerLabel(label: "Notification"),
-                          AppSpaces.verticalSpace10,
-                          BadgedContainer(
-                            label: "Do not disturb",
-                            callback: () {},
-                            value: "Off",
-                            badgeColor: "FDA5FF",
-                          ),
+                          // AppSpaces.verticalSpace20,
+                          // ContainerLabel(label: "Notification"),
+                          // AppSpaces.verticalSpace10,
+                          // BadgedContainer(
+                          //   label: "Do not disturb",
+                          //   callback: () {},
+                          //   value: "Off",
+                          //   badgeColor: "FDA5FF",
+                          // ),
                           AppSpaces.verticalSpace20,
                         ],
                       ),

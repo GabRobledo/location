@@ -91,7 +91,7 @@ class _ChatMessageState extends State<ChatMessage> {
                     ],
                   ),
                 ),
-                Icon(Icons.settings, color: Colors.black54),
+                // Icon(Icons.settings, color: Colors.black54),
               ],
             ),
           ),
@@ -143,14 +143,14 @@ class _ChatMessageState extends State<ChatMessage> {
                     child: Container(
                       height: 30,
                       width: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.lightBlue,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Icon(Icons.add, color: Colors.white, size: 20),
+                      // decoration: BoxDecoration(
+                      //   color: Colors.blue,
+                      //   borderRadius: BorderRadius.circular(30),
+                      // ),
+                      // child: Icon(Icons.add, color: Colors.white, size: 20),
                     ),
                   ),
-                  SizedBox(width: 15),
+                  SizedBox(width: 1),
                   Expanded(
                     child: TextField(
                       decoration: InputDecoration(
