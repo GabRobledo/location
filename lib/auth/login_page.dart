@@ -42,6 +42,8 @@ class _LoginPageState extends State<LoginPage> {
     final email = emailController.text;
     final password = passwordController.text;
 
+    
+
     setState(() {
       isLoading = true;
     });
@@ -65,7 +67,8 @@ class _LoginPageState extends State<LoginPage> {
         // Get the LoginSession provider and set the user ID
         final loginSession = Provider.of<LoginSession>(context, listen: false);
         loginSession
-            .setUserId(user['_id']); // Assuming the user ID field is '_id'
+            .setUserId(user['_id']);
+            //  loginSession.setFirstName(user['firstName']); // Assuming the user ID field is '_id'
         print(user['_id']);
 
         if (user['role'] == 'Mechanic') {

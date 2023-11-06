@@ -2,17 +2,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:location/location.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
-import 'dart:math';
+
 import '../service/mongo_service.dart';
 import '../utils/location.dart';
 import '../service/socket_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:developer' as developer;
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+
+
 import '../profile/profile_overview.dart';
 import '../auth/login_page.dart';
-import '../transaction/mechanic_request.dart';
+
 import '../transaction/transaction_list.dart';
 import '../drawer/favorites.dart';
 import '../drawer/settings.dart';
@@ -44,30 +44,7 @@ class _MechanicPageState extends State<MechanicPage> {
 
   TextEditingController searchController = TextEditingController();
 
-  // GoogleMapController? _controller;
-  // Set<Marker> _markers = {};
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('Map View'),
-//       ),
-//       body: FlutterMap(
-//         options: MapOptions(
-//           center: LatLng(51.5, -0.09), // Initial map center coordinates
-//           zoom: 13.0, // Initial zoom level
-//         ),
-//         layers: [
-//           TileLayerOptions(
-//             urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-//             subdomains: ['a', 'b', 'c'],
-//           ),
-//           // Add more layers as needed, e.g., MarkerLayerOptions
-//         ],
-//       ),
-//     );
-//   }
-// }
+  
 
   @override
   void initState() {
@@ -145,25 +122,7 @@ class _MechanicPageState extends State<MechanicPage> {
         _locationName = locationName;
       });
 
-      // Save user data in MongoDB
-      // await updateLocationInDb(
-      //   widget.sessionId,
-      //   locationData.latitude!,
-      //   locationData.longitude!,
-      //   locationName,
-      //   city ?? '',
-      // );
-
-      // final Map<String, dynamic> locationUpdate = {
-      //   'userId': widget.sessionId,
-      //   'location': {
-      //     'latitude': locationData.latitude,
-      //     'longitude': locationData.longitude,
-      //     'address': locationName,
-      //     'city': city ?? '',
-      //   },
-      // };
-      // socketService.socket?.emit("mechanicLocationUpdate", locationUpdate);
+      
       updateLocation(widget.sessionId, locationData.latitude!,
           locationData.longitude!, locationName, city ?? '');
       updateUserStatus(widget.sessionId, true);
@@ -330,86 +289,13 @@ class _MechanicPageState extends State<MechanicPage> {
   }
 
   void _handleLogout() {
-    // Implement your logout logic here.
-    // This might include clearing user session data, etc.
-
-    // Navigate back to the login page.
+    
     Navigator.of(context).pushReplacement(MaterialPageRoute(
-      builder: (context) => LoginPage(), // Replace with your login page widget
+      builder: (context) => LoginPage(), 
     ));
   }
 
-  // void _showDriverLocationOnMap(String address) async {
-  //   List<geocoding.Placemark> placemarks =
-  //       await geocoding.locationFromAddress(address);
-
-  //   if (placemarks.isNotEmpty) {
-  //     final geocoding.Placemark placemark = placemarks.first;
-  //     final double latitude = placemark.latitude!;
-  //     final double longitude = placemark.longitude!;
-
-  //     final mapController = MapController();
-  //     final LatLng driverLocation = LatLng(latitude, longitude);
-
-  //     showModalBottomSheet(
-  //       context: context,
-  //       builder: (BuildContext context) {
-  //         return Container(
-  //           height: 300, // Adjust the height as needed
-  //           child: FlutterMap(
-  //             options: MapOptions(
-  //               center: driverLocation,
-  //               zoom: 14.0, // Adjust the initial zoom level
-  //               plugins: [MarkerClusterPlugin()], // Enable marker clustering
-  //               onTap: (_) {
-  //                 if (Navigator.of(context).canPop()) {
-  //                   Navigator.of(context).pop();
-  //                 }
-  //               },
-  //             ),
-  //             layers: [
-  //               TileLayerOptions(
-  //                 urlTemplate:
-  //                     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  //                 subdomains: ['a', 'b', 'c'],
-  //               ),
-  //               MarkerLayerOptions(
-  //                 markers: [
-  //                   Marker(
-  //                     width: 30.0,
-  //                     height: 30.0,
-  //                     point: driverLocation,
-  //                     builder: (context) => Icon(
-  //                       Icons.location_pin,
-  //                       color: Colors.red,
-  //                       size: 30.0,
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ],
-  //             mapController: mapController,
-  //           ),
-  //         );
-  //       },
-  //     );
-  //   } else {
-  //     // Handle the case where no coordinates were found for the given address
-  //     showDialog(
-  //       context: context,
-  //       builder: (context) => AlertDialog(
-  //         title: Text('Error'),
-  //         content: Text('Location not found for the provided address.'),
-  //         actions: [
-  //           TextButton(
-  //             onPressed: () => Navigator.pop(context),
-  //             child: Text('OK'),
-  //           ),
-  //         ],
-  //       ),
-  //     );
-  //   }
-  // }
+  
 
   void _onItemTapped(int index) {
     setState(() {
@@ -448,162 +334,10 @@ class _MechanicPageState extends State<MechanicPage> {
     );
   }
 
-  void _showHelpCenterDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Help Center'),
-          content: Text(helpCenterText),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  
 
-  String helpCenterText = '''
-**Frequently Asked Questions (FAQs)**
-
-1. **How do I create an account?**
-   To create an account, click on the "Sign Up" button on the login page and provide the required information.
-
-2. **How can I reset my password?**
-   If you've forgotten your password, you can click on the "Forgot Password" link on the login page to reset it.
-
-3. **How do I contact customer support?**
-   You can reach our customer support team by sending an email to support@example.com or by calling our toll-free number at 1-800-123-4567.
-
-4. **What are the supported payment methods?**
-   We accept payments via credit/debit cards, PayPal, and in-app wallet.
-
-5. **Is my personal information secure?**
-   Yes, we take the security of your personal information seriously. We use industry-standard encryption to protect your data.
-
-6. **How do I report a problem with the app?**
-   If you encounter any issues or have suggestions for improvements, please use the in-app feedback feature or contact our support team.
-
-**Contact Information**
-
-- Email: support@example.com
-- Phone: 1-800-123-4567
-- Address: 123 Main Street, City, Country
-''';
-
-  void _showTermsAndConditionsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Terms and Conditions'),
-          content: Text(termsAndConditionsText),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  String termsAndConditionsText = '''
-1. Acceptance of Terms
-   By using this app, you agree to comply with and be bound by these terms and conditions.
-
-2. Use License
-   Permission is granted to temporarily download one copy of the materials (information or software) on this app for personal, non-commercial use only.
-
-3. Disclaimer
-   The materials on this app are provided "as is". The app makes no warranties, expressed or implied.
-
-4. Limitations
-   In no event shall the app be liable for any damages arising out of the use or inability to use the materials on this app.
-
-5. Governing Law
-   These terms and conditions are governed by and construed in accordance with the laws of your jurisdiction.
-
-6. Changes to Terms
-   The app may revise these terms and conditions at any time without notice.
-''';
-
-  void _showSettingsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Settings'),
-          content: Text(settingsText),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  String settingsText = '''
-**General Settings**
-
-- **Notifications:** Enable or disable app notifications.
-- **Language:** Choose your preferred language.
-- **Theme:** Customize the app's appearance with light or dark mode.
-- **Privacy:** Manage your privacy settings.
-
-**Account Settings**
-
-- **Change Password:** Update your account password.
-- **Profile:** Edit your profile information.
-- **Security:** Enhance your account security.
-
-**App Version**
-
-- **Version:** 1.0.0
-- **Check for Updates:** Check if there are any new app updates available.
-
-**Support and Feedback**
-
-- **Contact Support:** Get assistance from our support team.
-- **Send Feedback:** Share your thoughts and suggestions.
-
-**Legal**
-
-- **Terms and Conditions:** Read our terms and conditions.
-- **Privacy Policy:** Review our privacy policy.
-- **Licenses:** View open-source licenses used in the app.
-''';
-  void navigateToMechanicReviewPage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MechanicReviewPage(
-          orderNumber: '12345',
-          customerName: 'John Doe',
-          customerAddress: '123 Main St',
-          comment: 'Some comment', // Provide a value for comment
-          fare: '50.00',
-          issue: 'Car trouble',
-          photo: 'url_to_photo',
-          distance: '5 miles',
-          paymentMethod: 'Credit Card',
-        ),
-      ),
-    );
-  }
+ 
+ 
 
   void _showFavoritesPage(BuildContext context) {
     Navigator.push(
@@ -630,12 +364,7 @@ class _MechanicPageState extends State<MechanicPage> {
               },
             ),
             actions: [
-              // IconButton(
-              //   icon: Icon(Icons.book),
-              //   onPressed: () {
-              //     // Add the action for the logbook icon here
-              //   },
-              // ),
+             
             ],
           ),
           drawer: Drawer(
@@ -663,15 +392,7 @@ class _MechanicPageState extends State<MechanicPage> {
                           _showProfile(widget.sessionId);
                         },
                       ),
-                      ListTile(
-                        leading: Icon(Icons.star), // Icon for "Favorites"
-                        title: Text('Favorites'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showFavoritesPage(context);
-                          // Add your "Favorites" navigation logic here
-                        },
-                      ),
+                     
                       ListTile(
                         leading: Icon(Icons.history), // Icon for "Transactions"
                         title: Text('Transactions'),
@@ -693,9 +414,7 @@ class _MechanicPageState extends State<MechanicPage> {
                         ),
                       ),
                       Divider(
-                        height: 20, // Adjust the height to make it bigger
-                        // Adjust the thickness
-                        // Change the color to blue or any other color you prefer
+                        height: 20, 
                       ),
                       ListTile(
                         leading: Icon(Icons.settings), // Icon for "Settings"
@@ -757,10 +476,7 @@ class _MechanicPageState extends State<MechanicPage> {
                 icon: Icon(Icons.message),
                 label: 'Messages',
               ),
-              // BottomNavigationBarItem(
-              //   icon: Icon(Icons.favorite),
-              //   label: 'Favorites',
-              // ),
+              
               BottomNavigationBarItem(
                 icon: Icon(Icons.person),
                 label: 'Profile',
@@ -854,31 +570,7 @@ class _MechanicPageState extends State<MechanicPage> {
                                                                   .grey[600],
                                                             ),
                                                           ),
-                                                          // Spacer(),
-                                                          // Container(
-                                                          //   padding: EdgeInsets
-                                                          //       .symmetric(
-                                                          //     horizontal: 4,
-                                                          //     vertical: 2,
-                                                          //   ),
-                                                          //   decoration:
-                                                          //       BoxDecoration(
-                                                          //     color:
-                                                          //         Colors.green,
-                                                          //     borderRadius:
-                                                          //         BorderRadius
-                                                          //             .circular(
-                                                          //                 4),
-                                                          //   ),
-                                                          //   child: Text(
-                                                          //     'Online',
-                                                          //     style: TextStyle(
-                                                          //       color: Colors
-                                                          //           .white,
-                                                          //       fontSize: 12,
-                                                          //     ),
-                                                          //   ),
-                                                          // ),
+                                                          
                                                         ],
                                                       ),
                                                       SizedBox(height: 4),
@@ -924,8 +616,7 @@ class _MechanicPageState extends State<MechanicPage> {
                                                   ElevatedButton(
                                                     // Use ElevatedButton for "Acrcept" button
                                                     onPressed: () {
-                                                      // Handle Accept logic here
-                                                      // For now, just print a message
+                                                     
                                                       print('Accepted');
                                                     },
                                                     style: ElevatedButton
@@ -940,8 +631,7 @@ class _MechanicPageState extends State<MechanicPage> {
                                                   ElevatedButton(
                                                     // Use TextButton for "Decline" button
                                                     onPressed: () {
-                                                      // Handle Decline logic here
-                                                      // For now, just print a message
+                                                      
                                                       print('Declined');
                                                     },
                                                     style: ElevatedButton
@@ -951,59 +641,7 @@ class _MechanicPageState extends State<MechanicPage> {
 
                                                     child: Text('Decline'),
                                                   ),
-                                                  // IconButton(
-                                                  //   icon: Icon(Icons.phone),
-                                                  //   onPressed: () {
-                                                  //     Navigator.pop(context);
-                                                  //     navigateToMechanicReviewPage(
-                                                  //         context);
-                                                  //   },
-                                                  // ),
-                                                  // IconButton(
-                                                  //   icon: Icon(Icons.map),
-                                                  //   onPressed: () {
-                                                  //     Navigator.push(
-                                                  //         context,
-                                                  //         MaterialPageRoute(
-                                                  //             builder:
-                                                  //                 (context) =>
-                                                  //                     FlutterMap(
-                                                  //                       options:
-                                                  //                           MapOptions(
-                                                  //                         center: LatLng(
-                                                  //                             latitude!,
-                                                  //                             longitude!), // Initial map center coordinates
-                                                  //                         zoom:
-                                                  //                             13.0, // Initial zoom level
-                                                  //                       ),
-                                                  //                       children: [
-                                                  //                         TileLayer(
-                                                  //                           urlTemplate:
-                                                  //                               "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                                                  //                           subdomains: [
-                                                  //                             'a',
-                                                  //                             'b',
-                                                  //                             'c'
-                                                  //                           ],
-                                                  //                           userAgentPackageName:
-                                                  //                               'com.raamb_app.app',
-                                                  //                         ),
-                                                  //                         MarkerLayer(
-                                                  //                           markers: [
-                                                  //                             Marker(
-                                                  //                               point: LatLng(latitude, longitude),
-                                                  //                               width: 80,
-                                                  //                               height: 80,
-                                                  //                               builder: (context) => Icon(Icons.pin_drop),
-                                                  //                             ),
-                                                  //                           ],
-                                                  //                         ),
-                                                  //                       ],
-                                                  //                     )
-                                                  //                     )
-                                                  //                     );
-                                                  //   },
-                                                  // ),
+                                                  
                                                 ],
                                               ),
                                             ),

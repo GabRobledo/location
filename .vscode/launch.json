@@ -20,6 +20,12 @@
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
+        },
+        {
+            "name": "Flutter (lib\\map\\map.dart)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib\\map\\map.dart"
         }
     ]
 }

@@ -28,7 +28,7 @@ class _ChatListState extends State<ChatList> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) {
-            return ChatMessage(
+            return ChatMessageWidget(
               messageContent: widget.messageText,
               messageType: widget.isMessageRead ? "sender" : "receiver",
             );

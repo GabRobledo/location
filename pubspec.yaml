@@ -55,6 +55,7 @@ dependencies:
   flutter_feather_icons: ^2.0.0+1
   flutter_polyline_points: ^1.0.0
   image_picker: ^1.0.4
+  flutter_map_marker_popup: ^4.1.0
 
   # dartleaf: ^1.1.4
   # flutter_map_location_marker: ^6.0.0

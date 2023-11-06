@@ -4,13 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../main.dart';
 import '../values/values.dart';
-import '../widgets/primary_progress_button.dart';
+
 import '../widgets/progress_card_close_button.dart';
 import '../background/darkRadialBackground.dart';
-import '../widgets/badged_container.dart';
-import '../widgets/text_outlined_button.dart';
+
 import '../widgets/container_label.dart';
-import '../widgets/profile_dummy.dart';
+
 import '../../service/mongo_service.dart';
 import '../profile/profile_verification.dart';
 import '../profile/edit_profile.dart';

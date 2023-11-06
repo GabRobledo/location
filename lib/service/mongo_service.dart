@@ -184,6 +184,44 @@ Future<List<Map<String, dynamic>>?> getDriverUsers() async {
   return null;
 }
 
+Future<void> bookMechanic(
+  String userId,
+  String mechanicId,
+  Map<String, dynamic> location,
+  String bookingTime,
+) async {
+  final db = await getDb();
+  final bookingCollection = db.collection('bookings');
+  final userCollection = db.collection('users');
+
+  // Check if the mechanic is valid and available
+  final mechanic = await userCollection.findOne({
+    '_id': mechanicId,
+    'role': 'Mechanic',
+    // Add other conditions to check if the mechanic is available
+  });
+
+  if (mechanic == null) {
+    // Handle case where mechanic is not found or not available
+    print('Mechanic not found or not available');
+    return;
+  }
+
+  // Create the booking document
+  final booking = {
+    'userId': userId,
+    'mechanicId': mechanicId,
+    'userLocation': location,
+    'bookingTime': bookingTime,
+    // Add other booking details as needed
+    'status': 'pending', // Initial booking status
+  };
+
+  // Insert the booking into the database
+  await bookingCollection.insertOne(booking);
+  print('Booking created successfully');
+}
+
 Future<void> saveChatMessage(
     String senderId, String content, String chatRoomId) async {
   final db = await getDb();

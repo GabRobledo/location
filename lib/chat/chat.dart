@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../chat/ChatList/chat_list.dart';
+import '../pages/driver_page.dart';
+import '../map/driver_map.dart';
+import '../profile/profile_overview.dart';
+
 
 class ChatUsers {
   String name;
@@ -18,11 +22,16 @@ class ChatUsers {
 }
 
 class ChatPage extends StatefulWidget {
+  
+
   @override
   _ChatPageState createState() => _ChatPageState();
+  
 }
 
+
 class _ChatPageState extends State<ChatPage> {
+  int _selectedIndex = 0;
   List<ChatUsers> chatUsers = [
     ChatUsers(
       name: "Jane Russel",
@@ -40,6 +49,50 @@ class _ChatPageState extends State<ChatPage> {
     ),
     // Add similar entries for other users
   ];
+  // void _onItemTapped(int index) {
+  //   setState(() {
+  //     _selectedIndex = index;
+  //   });
+
+  //   if (index == 1) {
+  //     // Messages tab
+  //     Navigator.push(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (context) => ChatPage(),
+  //       ),
+  //     );
+  //   } else if (index == 2) {
+  //     // Favorites tab
+  //     Navigator.push(
+  //       context
+  //       // MaterialPageRoute(
+  //       //   builder: (context)
+  //         //  => MapPage(
+  //         //   // sessionId: widget.sessionId, // Pass the session ID
+  //         //   // mechanicUsers: mechanicUsers,
+            
+  //         //    // Pass the list of mechanics
+            
+           
+  //         // ),
+      
+  //       )
+      
+  //   } else if (index == 3) {
+  //     // Profile tab
+  //     // _showProfile(widget.sessionId); // Replace _yourUserId with the user's ID
+  //   }
+  // }
+
+  void _showProfile(String userId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileOverview(sessionId: userId),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,28 +143,28 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.only(top: 16, left: 16, right: 16),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "Search...",
-                  hintStyle: TextStyle(color: Colors.grey.shade600),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Colors.grey.shade600,
-                    size: 20,
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding: EdgeInsets.all(8),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(
-                        color: Colors.grey.shade100,
-                      )),
-                ),
-              ),
-            ),
+            // Padding(
+            //   padding: EdgeInsets.only(top: 16, left: 16, right: 16),
+            //   child: TextField(
+            //     decoration: InputDecoration(
+            //       hintText: "Search...",
+            //       hintStyle: TextStyle(color: Colors.grey.shade600),
+            //       prefixIcon: Icon(
+            //         Icons.search,
+            //         color: Colors.grey.shade600,
+            //         size: 20,
+            //       ),
+            //       filled: true,
+            //       fillColor: Colors.grey.shade100,
+            //       contentPadding: EdgeInsets.all(8),
+            //       enabledBorder: OutlineInputBorder(
+            //           borderRadius: BorderRadius.circular(20),
+            //           borderSide: BorderSide(
+            //             color: Colors.grey.shade100,
+            //           )),
+            //     ),
+            //   ),
+            // ),
             ListView.builder(
               itemCount: chatUsers.length,
               shrinkWrap: true,
@@ -130,6 +183,30 @@ class _ChatPageState extends State<ChatPage> {
           ],
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        
+      items: const <BottomNavigationBarItem>[
+         BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+         BottomNavigationBarItem(
+             icon: Icon(Icons.message),
+             label: 'Messages',
+         ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.location_on),
+             label: 'Map',
+           ),
+           
+ 
+        ],
+        currentIndex: _selectedIndex,
+        
+        selectedItemColor: Colors.red,
+        unselectedItemColor: Colors.grey,
+        // onTap: _onItemTapped,
+       ),
     );
   }
 }
