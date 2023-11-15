@@ -7,9 +7,9 @@ import '../values/values.dart';
 
 import '../widgets/progress_card_close_button.dart';
 import '../background/darkRadialBackground.dart';
-
+import 'dart:convert';
 import '../widgets/container_label.dart';
-
+import 'package:http/http.dart' as http;
 import '../../service/mongo_service.dart';
 import '../profile/profile_verification.dart';
 import '../profile/edit_profile.dart';
@@ -27,22 +27,49 @@ class ProfileOverview extends StatefulWidget {
 
 class _ProfileOverviewState extends State<ProfileOverview> {
   String? profilePictureUrl;
+  
 
   Future<void> _uploadProfilePicture() async {
     final picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       final File file = File(pickedFile.path);
+      final bytes = file.readAsBytesSync();
+      String base64Image = base64Encode(bytes);
 
-      // Update the profile picture URL
-      setState(() {
-        profilePictureUrl =
-            file.path; // Set the profile picture URL to the local file path
-      });
+      try {
+        var response = await http.post(
+          
+          Uri.parse('https://63a5-2001-4454-415-8a00-d420-28e1-55cb-d200.ngrok-free.app/uploadProfilePicture'),
+ 
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "image": base64Image,
+            "userId": widget.sessionId, // Accessing sessionId via widget
+          }),
+         
+        );
+ print('treat');
+
+        if (response.statusCode == 200) {
+          // Assuming the server returns the URL of the stored image
+          var data = jsonDecode(response.body);
+          setState(() {
+            profilePictureUrl = data['imageUrl']; // Adjust based on your server's response
+          });
+        } else {
+          // Handle error
+          print('Failed to upload image: ${response.statusCode}');
+        }
+      } catch (e) {
+        // Handle any errors during the HTTP request
+        print('Error occurred: $e');
+      }
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -70,42 +97,7 @@ class _ProfileOverviewState extends State<ProfileOverview> {
                       child: Column(
                         children: [
                           SizedBox(height: 20.0),
-                          // Display the profile picture or a default image
-                          Container(
-                            width: 150.0,
-                            height: 150.0,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              image: DecorationImage(
-                                image: profilePictureUrl != null
-                                    ? FileImage(
-                                        File(
-                                            profilePictureUrl!)) as ImageProvider<
-                                        Object> // Cast to ImageProvider<Object>
-                                    : NetworkImage(user['profilePictureUrl'] ??
-                                        ''), // Use the default profile picture URL
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            child: InkWell(
-                              onTap: () {
-                                // Implement the logic to upload a new profile picture
-                                // You can use image picker libraries for this purpose.
-                              },
-                              child: profilePictureUrl == null
-                                  ? Icon(
-                                      Icons.person,
-                                      size: 100.0,
-                                      color: Colors.grey,
-                                    )
-                                  : null, // Display a default icon if there's no profile picture
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _uploadProfilePicture,
-                            child: Text('Upload Profile Picture'),
-                          ),
+                          
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
@@ -128,18 +120,18 @@ class _ProfileOverviewState extends State<ProfileOverview> {
                             padding: const EdgeInsets.all(15.0),
                             child: Column(
                               children: [
-                                ElevatedButton(
-                                  onPressed: () {
-                                    // Navigate to the EditProfilePage when the button is pressed
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => EditProfilePage(),
-                                      ),
-                                    );
-                                  },
-                                  child: Text('Edit Profile'),
-                                ),
+                                // ElevatedButton(
+                                //   onPressed: () {
+                                //     // Navigate to the EditProfilePage when the button is pressed
+                                //     Navigator.push(
+                                //       context,
+                                //       MaterialPageRoute(
+                                //         builder: (context) => EditProfilePage(),
+                                //       ),
+                                //     );
+                                //   },
+                                //   child: Text('Edit Profile'),
+                                // ),
                                 SizedBox(
                                   height: 10,
                                 ), // Add some spacing between buttons
@@ -207,64 +199,10 @@ class _ProfileOverviewState extends State<ProfileOverview> {
                                   ),
                                 ),
 
-                                //   AppSpaces.verticalSpace10,
-                                //   ContainerLabel(label: "Contact Number"),
-                                //   AppSpaces.verticalSpace10,
-                                //   Container(
-                                //     width: double.infinity,
-                                //     height: 50,
-                                //     padding: EdgeInsets.all(10.0),
-                                //     decoration: BoxDecoration(
-                                //       color: AppColors.primaryBackgroundColor,
-                                //       borderRadius: BorderRadius.circular(10),
-                                //     ),
-                                //     child: Row(
-                                //       mainAxisAlignment:
-                                //           MainAxisAlignment.spaceBetween,
-                                //       children: [
-                                //         Expanded(
-                                //           child: TextField(
-                                //             controller: contactNumberController,
-                                //             decoration: InputDecoration(
-                                //               hintText:
-                                //                   'Enter your contact number',
-                                //               border: InputBorder.none,
-                                //             ),
-                                //             style: TextStyle(color: Colors.white),
-                                //           ),
-                                //         ),
-                                //         PrimaryProgressButton(
-                                //           width: 90,
-                                //           height: 40,
-                                //           label: "Verify",
-                                //           textStyle: GoogleFonts.lato(
-                                //             color: Colors.white,
-                                //             fontWeight: FontWeight.bold,
-                                //           ),
-                                //           // onPressed: () {
-                                //           //   // Implement contact number verification logic here
-                                //           //   String contactNumber =
-                                //           //       contactNumberController.text;
-                                //           //   // You can send the contact number for verification and handle the result.
-                                //           //   // You may want to show a confirmation dialog or update the UI accordingly.
-                                //           // },
-                                //         ),
-                                //       ],
-                                //     ),
-                                //   ),
-                                // ],
                               ],
                             ),
                           ),
-                          // AppSpaces.verticalSpace20,
-                          // ContainerLabel(label: "Notification"),
-                          // AppSpaces.verticalSpace10,
-                          // BadgedContainer(
-                          //   label: "Do not disturb",
-                          //   callback: () {},
-                          //   value: "Off",
-                          //   badgeColor: "FDA5FF",
-                          // ),
+                         
                           AppSpaces.verticalSpace20,
                         ],
                       ),

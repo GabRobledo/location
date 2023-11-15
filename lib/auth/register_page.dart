@@ -24,11 +24,16 @@ class _RegisterPageState extends State<RegisterPage> {
   TextEditingController uploadPhotoController = TextEditingController();
   String selectedRole = "";
   List<String> selectedVehicleTypes = [];
-
-  bool isUserRegistered = false;
+final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _autoValidate = false;
   bool isLoading = false;
+  bool isUserRegistered = false;
+ 
 
   void register() async {
+    if (_formKey.currentState!.validate()) {
+    // If the form passes validation, then proceed with the registration logic
+    setState(() => isLoading = true);
     final email = emailController.text;
     final firstName = firstNameController.text;
     final lastName = lastNameController.text;
@@ -46,11 +51,12 @@ class _RegisterPageState extends State<RegisterPage> {
         lastName.isEmpty ||
         phoneNumber.isEmpty ||
         password.isEmpty ||
-        role.isEmpty ||
-        homeAddress.isEmpty ||
+        //  uploadPhoto.isEmpty ||
+        // homeAddress.isEmpty ||
         // emailVerification.isEmpty ||
-        mobileNumberVerification.isEmpty ||
-        uploadPhoto.isEmpty) {
+        // mobileNumberVerification.isEmpty ||
+        role.isEmpty
+        ) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -197,141 +203,146 @@ class _RegisterPageState extends State<RegisterPage> {
         isLoading = false;
       });
     }
+  } else {
+    // If the form doesn't pass validation, enable auto-validation to give feedback to the user
+    setState(() => _autoValidate = true);
   }
+}
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty || !RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$').hasMatch(value)) {
+      return 'Please enter a valid email';
+    }
+    return null;
+  }
+
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'This field cannot be empty';
+    }
+    return null;
+  }
+
+  String? _validatePhoneNumber(String? value) {
+    if (value == null || value.isEmpty || !RegExp(r'^\+?(\d.*){3,}$').hasMatch(value)) {
+      return 'Please enter a valid phone number';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty || value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
+  }
+  
+  Widget _buildCustomTextField(TextEditingController controller, String label, bool isPassword, String? Function(String?) validator, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: OutlineInputBorder(),
+        ),
+        obscureText: isPassword,
+        validator: validator,
+      ),
+    );
+  }
+  Widget _buildRoleDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: DropdownButtonFormField<String>(
+        value: selectedRole.isEmpty ? null : selectedRole,
+        decoration: InputDecoration(
+          labelText: 'Role',
+          border: OutlineInputBorder(),
+        ),
+        items: <String>['Driver', 'Mechanic'].map((String value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          );
+        }).toList(),
+        onChanged: (newValue) {
+          setState(() {
+            selectedRole = newValue!;
+            selectedVehicleTypes.clear();
+          });
+        },
+        validator: (value) => value == null ? 'Please select a role' : null,
+      ),
+    );
+  }
+
+  Widget _buildVehicleTypeCheckboxes() {
+    return Column(
+      children: <String>['Automotive', 'Motorcycle', 'Bicycle'].map((String vehicleType) {
+        return CheckboxListTile(
+          title: Text(vehicleType),
+          value: selectedVehicleTypes.contains(vehicleType),
+          onChanged: (bool? value) {
+            setState(() {
+              if (value == true) {
+                selectedVehicleTypes.add(vehicleType);
+              } else {
+                selectedVehicleTypes.remove(vehicleType);
+              }
+            });
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildRegisterButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: ElevatedButton(
+        onPressed: isLoading ? null : register,
+        child: isLoading
+            ? CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              )
+            : Text('Register'),
+      ),
+    );
+  }
+  
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Register'),
-      ),
+      appBar: AppBar(title: Text('Register')),
       body: SingleChildScrollView(
-        child: Container(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: emailController,
-                decoration: InputDecoration(labelText: 'Email Verification'),
-              ),
-              SizedBox(height: 16.0),
-              TextField(
-                controller: firstNameController,
-                decoration: InputDecoration(labelText: 'First Name'),
-              ),
-              SizedBox(height: 16.0),
-              TextField(
-                controller: lastNameController,
-                decoration: InputDecoration(labelText: 'Last Name'),
-              ),
-              SizedBox(height: 16.0),
-              TextField(
-                controller: phoneNumberController,
-                decoration: InputDecoration(labelText: 'Phone Number'),
-              ),
-              SizedBox(height: 16.0),
-              TextField(
-                controller: passwordController,
-                decoration: InputDecoration(labelText: 'Password'),
-                obscureText: true,
-              ),
-              SizedBox(height: 16.0),
-              TextField(
-                controller: homeAddressController,
-                decoration: InputDecoration(labelText: 'Home Address'),
-              ),
-              // SizedBox(height: 16.0),
-              // TextField(
-              //   controller: emailVerificationController,
-              //   decoration: InputDecoration(labelText: 'Email Verification'),
-              // ),
-              SizedBox(height: 16.0),
-              TextField(
-                controller: mobileNumberVerificationController,
-                decoration:
-                    InputDecoration(labelText: 'Mobile Number Verification'),
-              ),
-              SizedBox(height: 16.0),
-              TextField(
-                controller: uploadPhotoController,
-                decoration: InputDecoration(labelText: 'Upload Photo'),
-              ),
-              SizedBox(height: 16.0),
-              DropDown(
-                items: ["Driver", "Mechanic"],
-                hint: Text("Role"),
-                icon: Icon(
-                  Icons.expand_more,
-                  color: Colors.blue,
-                ),
-                onChanged: (v) {
-                  setState(() {
-                    selectedRole = v!;
-                    selectedVehicleTypes.clear();
-                  });
-                },
-              ),
-              // Show vehicle type checkboxes only if the role is "Mechanic"
-              if (selectedRole == "Mechanic")
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Select Vehicle Types:",
-                      style: TextStyle(
-                          fontSize: 16.0, fontWeight: FontWeight.bold),
-                    ),
-                    CheckboxListTile(
-                      title: Text("Automotive"),
-                      value: selectedVehicleTypes.contains("Automotive"),
-                      onChanged: (value) {
-                        setState(() {
-                          if (value!) {
-                            selectedVehicleTypes.add("Automotive");
-                          } else {
-                            selectedVehicleTypes.remove("Automotive");
-                          }
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: Text("Motorcycle"),
-                      value: selectedVehicleTypes.contains("Motorcycle"),
-                      onChanged: (value) {
-                        setState(() {
-                          if (value!) {
-                            selectedVehicleTypes.add("Motorcycle");
-                          } else {
-                            selectedVehicleTypes.remove("Motorcycle");
-                          }
-                        });
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: Text("Bicycle"),
-                      value: selectedVehicleTypes.contains("Bicycle"),
-                      onChanged: (value) {
-                        setState(() {
-                          if (value!) {
-                            selectedVehicleTypes.add("Bicycle");
-                          } else {
-                            selectedVehicleTypes.remove("Bicycle");
-                          }
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              SizedBox(height: 24.0),
-              ElevatedButton(
-                child: Text('Register'),
-                onPressed: register,
-              ),
-            ],
+        padding: const EdgeInsets.all(16.0),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          child: Form(
+            key: _formKey,
+            autovalidateMode: _autoValidate ? AutovalidateMode.always : AutovalidateMode.disabled,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildCustomTextField(emailController, 'Email', false, _validateEmail, Icons.email),
+                _buildCustomTextField(firstNameController, 'First Name', false, _validateName, Icons.person),
+                _buildCustomTextField(lastNameController, 'Last Name', false, _validateName, Icons.person_outline),
+                _buildCustomTextField(phoneNumberController, 'Phone Number', false, _validatePhoneNumber, Icons.phone),
+                _buildCustomTextField(passwordController, 'Password', true, _validatePassword, Icons.lock),
+                _buildRoleDropdown(),
+                if (selectedRole == "Mechanic") _buildVehicleTypeCheckboxes(),
+                _buildRegisterButton(),
+              ],
+            ),
           ),
         ),
       ),
     );
+    
+    
   }
-}
+  }
+

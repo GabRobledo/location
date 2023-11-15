@@ -23,19 +23,12 @@ Future<Map<String, dynamic>?> registerUser(
   String phoneNumber,
   String password,
   String role,
-  // String SUV,
-  // String Motorcycle,
-  // String Tricycle,
+  
   List<String> selectedVehicleTypes,
 ) async {
   final db = await getDb();
   final collection = db.collection('users');
 
-  // final SelectedVehicleTypes = {
-  //   'SUV': SUV,
-  //   'Motorcycle': Motorcycle,
-  //   'Tricycle': Tricycle,
-  // };
 
   final existingUser = await collection.findOne({'email': email});
 
@@ -184,58 +177,67 @@ Future<List<Map<String, dynamic>>?> getDriverUsers() async {
   return null;
 }
 
-Future<void> bookMechanic(
-  String userId,
-  String mechanicId,
-  Map<String, dynamic> location,
-  String bookingTime,
-) async {
-  final db = await getDb();
-  final bookingCollection = db.collection('bookings');
-  final userCollection = db.collection('users');
-
-  // Check if the mechanic is valid and available
-  final mechanic = await userCollection.findOne({
-    '_id': mechanicId,
-    'role': 'Mechanic',
-    // Add other conditions to check if the mechanic is available
-  });
-
-  if (mechanic == null) {
-    // Handle case where mechanic is not found or not available
-    print('Mechanic not found or not available');
-    return;
-  }
-
-  // Create the booking document
-  final booking = {
-    'userId': userId,
-    'mechanicId': mechanicId,
-    'userLocation': location,
-    'bookingTime': bookingTime,
-    // Add other booking details as needed
-    'status': 'pending', // Initial booking status
-  };
-
-  // Insert the booking into the database
-  await bookingCollection.insertOne(booking);
-  print('Booking created successfully');
-}
-
-Future<void> saveChatMessage(
-    String senderId, String content, String chatRoomId) async {
+Future<void> sendMessageToDb(String senderId, String receiverId, String content) async {
   final db = await getDb();
   final collection = db.collection('messages');
 
-  final newMessage = {
+  final messageDocument = {
+    '_id': ObjectId().toHexString(),
     'senderId': senderId,
+    'receiverId': receiverId,
     'content': content,
     'timestamp': DateTime.now(),
-    'chatRoomId': chatRoomId,
+    'read': false,
   };
 
-  await collection.insert(newMessage);
+  await collection.insertOne(messageDocument);
 }
+
+Future<List<Map<String, dynamic>>> getChatHistory(String sessionId, String user) async {
+ final db = await getDb();
+  final collection = db.collection('messages');
+
+  final messagesDocuments = await collection.find({
+    '\$or': [
+      {
+        'senderId': (sessionId),
+        'receiverId': (user)
+      },
+      {
+        'senderId': (user),
+        'receiverId': (sessionId)
+      },
+    ]
+  }).toList();
+
+  return messagesDocuments;
+}
+
+
+Future<List<Map<String, dynamic>>> getMessagesFromDb(String sessionId, String user) async {
+  final db = await getDb();
+  final collection = db.collection('messages');
+
+  final messagesDocuments = await collection.find({
+    '\$or': [
+      {'senderId': sessionId, 'receiverId': user},
+      {'senderId': user, 'receiverId': sessionId},
+    ]
+  }).toList();
+
+  return messagesDocuments;
+}
+
+Future<void> markMessageAsReadInDb(Db _db, String messageId) async {
+  final db = await getDb();
+  final collection = db.collection('messages');
+  await collection.updateOne(
+    where.id(ObjectId.fromHexString(messageId)),
+    modify.set('read', true),
+  );
+}
+
+
 
 Future<void> closeDb() async {
   if (_db != null) {

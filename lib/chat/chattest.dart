@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
-import '../ChatContent/message_list.dart';
+import 'ChatContent/message_list.dart';
 import 'package:raamb_app/service/mongo_service.dart';
 
 // Model for chat messages
 
-
 // Widget for displaying individual chat messages
-class ChatMessageWidget extends StatelessWidget {
+class ChatMessageWidgetTest extends StatelessWidget {
   final String currentUserId; // Add this line
   final String senderId;
   final String receiverId;
@@ -15,7 +14,7 @@ class ChatMessageWidget extends StatelessWidget {
   final DateTime timestamp;
   final bool read;
 
-  const ChatMessageWidget({
+  const ChatMessageWidgetTest({
     Key? key,
     required this.currentUserId, // Add this line
     required this.senderId,
@@ -26,11 +25,9 @@ class ChatMessageWidget extends StatelessWidget {
   }) : super(key: key);
   // ... rest of your code
 
-
   String _formatTimestamp(DateTime timestamp) {
     return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -73,15 +70,14 @@ class ChatMessageWidget extends StatelessWidget {
   }
 }
 
-
 // Main Chat Page Widget
-class ChatMessages extends StatefulWidget {
+class ChatMessagesTest extends StatefulWidget {
   final String sessionId; // This will act as the senderId.
-  final String user;    
+  final String user;
   final String firstName;
   final String lastName;
 
-  ChatMessages({
+  ChatMessagesTest({
     Key? key,
     required this.sessionId,
     required this.user,
@@ -93,7 +89,7 @@ class ChatMessages extends StatefulWidget {
   _ChatMessagesState createState() => _ChatMessagesState();
 }
 
-class _ChatMessagesState extends State<ChatMessages> {
+class _ChatMessagesState extends State<ChatMessagesTest> {
   IO.Socket? socket;
   List<ChatMessage> messages = [];
   TextEditingController messageController = TextEditingController();
@@ -113,46 +109,35 @@ class _ChatMessagesState extends State<ChatMessages> {
     super.dispose();
   }
 
-  void _sendMessage() async {
-  final String newMessageContent = messageController.text.trim();
-  if (newMessageContent.isNotEmpty) {
-    var message = {
-      'content': newMessageContent,
-      'senderId': widget.sessionId, // Use sessionId as the sender's ID
-      'receiverId': widget.user,    // Use user as the receiver's ID
-    };
+  void _sendMessage() {
+    final String newMessageContent = messageController.text.trim();
+    if (newMessageContent.isNotEmpty) {
+      var message = {
+        'content': newMessageContent,
+        'senderId': widget.sessionId, // Use sessionId as the sender's ID
+        'receiverId': widget.user, // Use user as the receiver's ID
+      };
 
-    // Assuming messageType is determined by senderId and receiverId logic
-    var messageType = widget.sessionId == message['senderId'] ? 'sender' : 'receiver';
+      socket?.emit('sendMessage', message);
+      messageController.clear();
 
-    print("Sending: $message");
-    socket?.emit('sendMessage', message);
-    print('emit');
-    messageController.clear();
-
-    // Add the message to the message list and scroll to the bottom
-    setState(() {
-      messages.add(ChatMessage(
-        senderId: widget.sessionId,
-        receiverId: widget.user,
-        timestamp: DateTime.now(),
-        messageContent: newMessageContent,
-        read: false,
-        
-      ));
-      _scrollToBottom();
-    });
-
-    // After sending the message through the socket, save it to the database
-    // await sendMessageToDb(widget.sessionId, widget.user, newMessageContent);
+      setState(() {
+        messages.add(ChatMessage(
+          senderId: widget.sessionId,
+          receiverId: widget.user,
+          timestamp: DateTime.now(),
+          messageContent: newMessageContent,
+          read: false,
+        ));
+        _scrollToBottom();
+      });
+    }
   }
-}
 
   void _initSocket() {
     // Replace with your actual server URL and socket connection options
-    socket = IO.io('https://63a5-2001-4454-415-8a00-d420-28e1-55cb-d200.ngrok-free.app', <String, dynamic>{
+    socket = IO.io('https://6b62-2001-4454-415-8a00-1c6a-3f66-7555-ddcc.ngrok-free.app/', <String, dynamic>{
       'transports': ['websocket'],
-      // 'autoConnect': false,
     });
     socket?.connect();
 
@@ -163,85 +148,40 @@ class _ChatMessagesState extends State<ChatMessages> {
     socket?.on('receiveMessage', (data) => _onReceiveMessage(data));
     _listenForChatHistory();
     _requestChatHistory();
-    // _fetchChatHistory();
   }
 
-//   void _fetchChatHistory() async {
-//   try {
-//     final chatHistory = await getChatHistory(widget.sessionId, widget.user);
-//     final messages = chatHistory.map((m) => ChatMessage.fromMap(m)).toList();
-//     setState(() {
-//       this.messages = messages;
-//     });
-//   } catch (e) {
-//     // Handle exceptions, possibly show an error message in the UI
-//   }
-//   print('receivd');
-// }
+  void _requestChatHistory() {
+    socket?.emit('requestChatHistory', {'sessionId': widget.sessionId, 'user': widget.user});
+  }
 
-// Flutter client-side code
-// Flutter client-side code
-void _requestChatHistory() {
-  socket?.emit('requestChatHistory', {'sessionId': widget.sessionId, 'user': widget.user});
-}
-
-
-void _listenForChatHistory() {
-  socket?.on('chatHistoryResponse', (data) {
-    final chatHistory = (data as List).map((m) => ChatMessage.fromMap(m)).toList();
-    setState(() {
-      messages = chatHistory;
+  void _listenForChatHistory() {
+    socket?.on('chatHistoryResponse', (data) {
+      final chatHistory = (data as List).map((m) => ChatMessage.fromMap(m)).toList();
+      setState(() {
+        messages = chatHistory;
+      });
     });
-  });
 
-  socket?.on('chatHistoryError', (data) {
-    // Handle the error, possibly show an error message in the UI
-  });
-}
-void _onReceiveMessage(dynamic data) {
-  print("Received: $data");
-  
-  // Parse the incoming message data into a ChatMessage object.
-  // Assuming that 'fromMap' is a static method that parses a Map into a ChatMessage.
-  ChatMessage newMessage = ChatMessage.fromMap(data);
+    socket?.on('chatHistoryError', (data) {
+      // Handle the error, possibly show an error message in the UI
+    });
+  }
 
-  // Update the state with the new message.
-  setState(() {
-    messages.add(newMessage);
-  });
+  void _onReceiveMessage(dynamic data) {
+    print("Received: $data");
 
-  // If you need to ensure that the new message is visible, schedule a scroll after the UI updates.
-  // However, this should probably be outside the setState to avoid unnecessary calls.
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (scrollController.hasClients) {
-      _scrollToBottom(); // This now will work correctly with the updated list.
-    }
-  });
-}
+    ChatMessage newMessage = ChatMessage.fromMap(data);
 
+    setState(() {
+      messages.add(newMessage);
+    });
 
-
-//   void _onReceiveMessage(dynamic data) {
-//   print("Received: $data");
-//   var messageType = data['senderId'] == widget.sessionId ? 'sender' : 'receiver';
-
-//   // Create a new ChatMessage with all required fields.
-//   ChatMessage newMessage = ChatMessage(
-//      // Assuming '_id' comes from your data
-//     senderId: data['senderId'],
-//     receiverId: data['receiverId'],
-//     messageContent: data['content'],
-//     timestamp: DateTime.parse(data['timestamp']), // Converting timestamp string to DateTime
-//     read: data['read'], // The 'read' status from your data
-//     // 'sender' or 'receiver' determined by comparison
-//   );
-
-//   setState(() {
-//     messages.add(newMessage);
-//     _scrollToBottom(); // Scroll to the bottom whenever a new message is received
-//   });
-// }
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (scrollController.hasClients) {
+        _scrollToBottom();
+      }
+    });
+  }
 
   void _scrollToBottom() {
     if (scrollController.hasClients) {
@@ -255,8 +195,6 @@ void _onReceiveMessage(dynamic data) {
 
   @override
   Widget build(BuildContext context) {
-    
-
     return Scaffold(
       appBar: AppBar(
         title: Text("Chat Detail"),
@@ -275,11 +213,6 @@ void _onReceiveMessage(dynamic data) {
                   icon: Icon(Icons.arrow_back, color: Colors.black),
                 ),
                 SizedBox(width: 2),
-                // CircleAvatar(
-                //   backgroundImage: NetworkImage("https://randomuser.me/api/portraits/men/5.jpg"),
-                //   maxRadius: 20,
-                // ),
-                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,21 +232,22 @@ void _onReceiveMessage(dynamic data) {
       body: Stack(
         children: <Widget>[
           ListView.builder(
-  itemCount: messages.length,
-  shrinkWrap: true,
-  padding: EdgeInsets.only(top: 10, bottom: 70),
-  physics: BouncingScrollPhysics(),
-  itemBuilder: (context, index) {
-    return ChatMessageWidget(
-    currentUserId: widget.sessionId, // Pass sessionId as currentUserId here
-    senderId: messages[index].senderId,
-    receiverId: messages[index].receiverId,
-    messageContent: messages[index].messageContent,
-    timestamp: messages[index].timestamp,
-    read: messages[index].read, // Assuming you have a read status
-    );
-  },
-),
+            itemCount: messages.length,
+            shrinkWrap: true,
+            padding: EdgeInsets.only(top: 10, bottom: 70),
+            physics: BouncingScrollPhysics(),
+            itemBuilder: (context, index) {
+              return ChatMessageWidgetTest(
+                currentUserId: widget.sessionId,
+                // Pass sessionId as currentUserId here
+                senderId: messages[index].senderId,
+                receiverId: messages[index].receiverId,
+                messageContent: messages[index].messageContent,
+                timestamp: messages[index].timestamp,
+                read: messages[index].read, // Assuming you have a read status
+              );
+            },
+          ),
           Align(
             alignment: Alignment.bottomLeft,
             child: Container(
@@ -350,3 +284,4 @@ void _onReceiveMessage(dynamic data) {
     );
   }
 }
+ // Pass sessionId as current

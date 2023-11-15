@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:raamb_app/chat/ChatContent/chat_message.dart';
-
+import 'package:raamb_app/chat/chattest.dart';
 import 'package:raamb_app/map/driver_map.dart';
-
+import 'package:raamb_app/map/drivertestmap.dart';
+import 'package:raamb_app/map/singe_drivermap.dart';
+import 'package:raamb_app/map/singledrivertest.dart';
 import '../drawer/terms_and_conditions.dart';
 import '../drawer/help_center.dart';
 import '../drawer/settings.dart';
@@ -11,9 +13,7 @@ import 'package:location/location.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-
 import 'package:raamb_app/main.dart';
-
 import '../service/mongo_service.dart';
 import '../utils/location.dart';
 import '../service/socket_service.dart';
@@ -22,15 +22,13 @@ import 'dart:developer' as developer;
 import '../profile/profile_overview.dart';
 import '../auth/login_page.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
-
-
-
 import '../transaction/transaction_list.dart';
 import '../drawer/favorites.dart';
-
 import '../chat/chat.dart';
-
 import 'package:provider/provider.dart';
+import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
+import 'package:raamb_app/chat/ChatList/chatnew.dart';
+
 
 
 class DriverPage extends StatefulWidget {
@@ -70,6 +68,11 @@ class _DriverPageState extends State<DriverPage> {
   List<Map<String, dynamic>> driverUsers = [];
   String? firstName;
   String? lastName;
+  String? email;
+ late PersistentTabController _controller;
+  
+  
+  
 
   // final List<String> _messages = [];
 
@@ -84,8 +87,8 @@ class _DriverPageState extends State<DriverPage> {
     _startLocationTimer();
     updateUserStatus(widget.sessionId, true);
     fetchMechanicUsers();
+    _controller = PersistentTabController(initialIndex: 0);
     
-    socket = IO.io('https://8cc2-49-145-135-84.ngrok-free.app');
     _loadUserData();
     
     (chatHistory) {
@@ -95,21 +98,21 @@ class _DriverPageState extends State<DriverPage> {
     };
     socketService.startSocketConnection();
 
-    socketService.socket?.on('message', (data) async {
-      // Assuming data includes senderId, content, and chatRoomId
-      final senderId = data['senderId'];
-      final content = data['content'];
-      final chatRoomId = data['chatRoomId'];
+    // socketService.socket?.on('message', (data) async {
+    //   // Assuming data includes senderId, content, and chatRoomId
+    //   final senderId = data['senderId'];
+    //   final content = data['content'];
+    //   final chatRoomId = data['chatRoomId'];
 
-      // Save the received message to MongoDB
-      await saveChatMessage(senderId, content, chatRoomId);
+    //   // Save the received message to MongoDB
+    //   await saveChatMessage(senderId, content, chatRoomId);
 
-      // Update the UI with the new message
-      setState(() {
-        _messages.add(data.toString());
-        print('Received message: $data');
-      });
-    });
+    //   // Update the UI with the new message
+    //   setState(() {
+    //     _messages.add(data.toString());
+    //     print('Received message: $data');
+    //   });
+    // });
 
     // socket?.on('message', (data) {
     //   setState(() {
@@ -394,15 +397,17 @@ class _DriverPageState extends State<DriverPage> {
       _selectedIndex = index;
     });
 
+    // if (index == 1) {
+    //   // Messages tab
+    //   Navigator.push(
+    //     context,
+    //     MaterialPageRoute(
+    //       builder: (context) => ChatPageNew(),
+    //     ),
+    //   );
+    // } 
+    // else 
     if (index == 1) {
-      // Messages tab
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatPage(),
-        ),
-      );
-    } else if (index == 2) {
       // Favorites tab
       Navigator.push(
         context,
@@ -417,10 +422,38 @@ class _DriverPageState extends State<DriverPage> {
           ),
         ),
       );
-    } else if (index == 3) {
-      // Profile tab
-      _showProfile(widget.sessionId); // Replace _yourUserId with the user's ID
     }
+    //  else if (index == 3) {
+    //   // Profile tab
+    //   _showProfile(widget.sessionId); // Replace _yourUserId with the user's ID
+    // }
+  }
+  // Function to navigate to the Transactions page
+  void _navigateToTransactions(String sessionId) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => TransactionsPage(bookingId: widget.sessionId),
+    ));
+  }
+
+  // Function to navigate to the Settings page
+  void _navigateToSettings() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => SettingsPage(),
+    ));
+  }
+
+  // Function to navigate to the Help Center page
+  void _navigateToHelpCenter() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => HelpCenterPage(),
+    ));
+  }
+
+  // Function to navigate to the Terms and Conditions page
+  void _navigateToTermsAndConditions() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => TermsAndConditionsPage(),
+    ));
   }
 
   void _showProfile(String userId) {
@@ -434,71 +467,7 @@ class _DriverPageState extends State<DriverPage> {
 
   
 
-  void _handleSubmitted(String data) {
-    socketService.socket?.emit('message', data);
-    _messages.add('You: $data');
-    _textController.clear();
-    print('Sent message: $data');
-    setState(() {}); // Add this print statement
-  }
-
-  void _showChatDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Container(
-            height: 400,
-            child: Column(
-              children: <Widget>[
-                AppBar(
-                  title: Text('Inbox'),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _messages.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return ListTile(
-                        title: Text(_messages[index]),
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: TextField(
-                          controller: _textController,
-                          decoration: InputDecoration(
-                            hintText: 'Enter a message',
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.send),
-                        onPressed: () {
-                          _handleSubmitted(_textController.text);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showFavoritesPage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => FavoritesPage()),
-    );
-  }
+  
 
   void _handleLogout() {
     // Implement your logout logic here.
@@ -509,6 +478,37 @@ class _DriverPageState extends State<DriverPage> {
       builder: (context) => LoginPage(), // Replace with your login page widget
     ));
   }
+Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
+  return ListTile(
+    leading: Icon(icon),
+    title: Text(title),
+    onTap: onTap,
+  );
+}
+void _confirmLogout(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Confirm Logout'),
+        content: Text('Do you really want to log out?'),
+        actions: <Widget>[
+          TextButton(
+            child: Text('Cancel'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: Text('Log Out'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _handleLogout();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
 
   
 
@@ -524,6 +524,7 @@ Future<void> _loadUserData() async {
         setState(() {
           firstName = userData['firstName'];
           lastName = userData['lastName'];
+          email = userData['email']; // Add this line to update the email
         });
       }
     }
@@ -535,19 +536,42 @@ Future<void> _loadUserData() async {
 
 
 
+List<Widget> _buildScreens() {
+    return [
+      DriverPage(sessionId: widget.sessionId), // using the sessionId passed to MyHomePage
+      // ChatMessages(),
+      MapPage(mechanicUsers: mechanicUsers, sessionId: widget.sessionId,), // using the mechanicUsers passed to MyHomePage
+    ];
+  }
+  List<PersistentBottomNavBarItem> _navBarsItems() {
+    return [
+      PersistentBottomNavBarItem(
+        icon: Icon(Icons.home),
+        title: ("Home"),
+        activeColorPrimary: Colors.red,
+        inactiveColorPrimary: Colors.grey,
+      ),
+      PersistentBottomNavBarItem(
+        icon: Icon(Icons.message),
+        title: ("Messages"),
+        activeColorPrimary: Colors.red,
+        inactiveColorPrimary: Colors.grey,
+      ),
+      PersistentBottomNavBarItem(
+        icon: Icon(Icons.location_on),
+        title: ("Map"),
+        activeColorPrimary: Colors.red,
+        inactiveColorPrimary: Colors.grey,
+      ),
+    ];
+  }
 
-  @override
+@override
   Widget build(BuildContext context) {
     final double? latitude = _locationData?.latitude;
     final double? longitude = _locationData?.longitude;
     var displayName = '${firstName ?? 'Your'} ${lastName ?? 'Name'}';
-    
-  
-  
-  
-
-    
-
+     var displayEmail = email ?? 'email@example.com'; // Default email placeholder
     return DefaultTabController(
   length: 4, // Number of tabs including "All"
   child: Scaffold(
@@ -560,20 +584,47 @@ Future<void> _loadUserData() async {
             Text(
               '$firstName $lastName', // Display the full name
               style: TextStyle(
-                fontSize: 14.0,
-                color: Colors.white70,
+              fontSize: 18.0,
               ),
             ),
           Text(
             _locationName ?? 'Default Location Name', // Location name falls back to a default if null
-            style: TextStyle(
-              fontSize: 18.0,
+            
+              style: TextStyle(
+                fontSize: 14.0,
+                color: Colors.white70,
+              
             ),
           ),
-        ],
+          ],
       ),
+      actions: <Widget>[
+        SizedBox(
+          width: 50, // Adjust the width as needed
+          height: 50, // Adjust the height as needed
+          child: IconButton(
+            icon: Icon(Icons.location_on_outlined, size: 25), // Adjust the size of the icon
+            onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => MapPageTest(sessionId: widget.sessionId,mechanicUsers: mechanicUsers,)),
+        );
+      },
+          ),
+        ),
+        // SizedBox(
+        //   width: 50, // Adjust the width as needed
+        //   height: 50, // Adjust the height as needed
+        //   child: IconButton(
+        //     icon: Icon(Icons.message_outlined, size: 25), // Adjust the size of the icon
+        //     onPressed: () {
+        //       // TODO: Add your Messages icon's functionality here
+        //     },
+        //   ),
+        // ),
+      ],
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight + 48.0), // Adjust the height as needed
+        preferredSize: const Size.fromHeight(kToolbarHeight + 42.0), // Adjust the height as needed
         child: Column(
           children: [
             Padding(
@@ -597,17 +648,17 @@ Future<void> _loadUserData() async {
             TabBar(
         isScrollable: true, // Set this to true to enable scrolling
         tabs: [
-                Tab(text: "Automotive"),
+                Tab(text: "All"),
                 Tab(text: "Motorcycle"),
                 Tab(text: "Bicycle"),
-                Tab(text: "All"), // The new "All" tab
+                Tab(text: "Automotive"), // The new "All" tab
               ],
               onTap: (index) {
                 // Handle the tap event and perform actions based on the tab
                 setState(() {
                   switch (index) {
                     case 0: // Automotive
-                      selectedVehicleTypes = 'Automotive';
+                      selectedVehicleTypes = null;
                       break;
                     case 1: // Motorcycle
                       selectedVehicleTypes = 'Motorcycle';
@@ -616,7 +667,7 @@ Future<void> _loadUserData() async {
                       selectedVehicleTypes = 'Bicycle';
                       break;
                     case 3: // All
-                      selectedVehicleTypes = null; // Or set this to 'All' if you have a specific filter for this
+                      selectedVehicleTypes = 'Automotive'; // Or set this to 'All' if you have a specific filter for this
                       break;
                   }
                   _filterMechanicByVehicleType(); // Make sure this method uses the selectedVehicleTypes variable to filter
@@ -626,118 +677,51 @@ Future<void> _loadUserData() async {
           ],
         ),
       ),
-      actions: [
-        // Any other action buttons/icons can go here
-      ],
+      
     ),
         drawer: Drawer(
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    UserAccountsDrawerHeader(
-                     accountName: Text(displayName),
-                      accountEmail: null, // Add email if available
-                      currentAccountPicture: CircleAvatar(
-                        backgroundColor: Colors.white,
-                        child:
-                            Icon(Icons.person), // Add user profile picture here
-                      ),
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.account_circle), // Icon for "Profile"
-                      title: Text('Profile'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        _showProfile(widget.sessionId);
-                      },
-                    ),
-                    // ListTile(
-                    //   leading: Icon(Icons.star), // Icon for "Favorites"
-                    //   title: Text('Favorites'),
-                    //   onTap: () {
-                    //     Navigator.pop(context);
-                    //     _showFavoritesPage(context);
-                    //     // Add your "Favorites" navigation logic here
-                    //   },
-                    // ),
-                    ListTile(
-                      leading: Icon(Icons.history), // Icon for "Transactions"
-                      title: Text('Transactions'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TransactionHistoryPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    Divider(),
-                    Container(
-                      height: 1, // Set the height for the line
-                      decoration: BoxDecoration(
-                        color: Colors.grey, // Choose the color you prefer
-                      ),
-                    ),
-                    Divider(
-                      height: 20, // Adjust the height to make it bigger
-                      // Adjust the thickness
-                      // Change the color to blue or any other color you prefer
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.settings), // Icon for "Settings"
-                      title: Text('Settings'),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => SettingsPage()),
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.help), // Icon for "Help Center"
-                      title: Text('Help Center'),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => HelpCenterPage()),
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(
-                          Icons.description), // Icon for "Terms and Conditions"
-                      title: Text('Terms and Conditions'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TermsAndConditionsPage(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+  child: Column(
+    children: [
+      Expanded(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            UserAccountsDrawerHeader(
+              accountName: Text(displayName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              accountEmail: Text(email ?? '', style: TextStyle(fontSize: 16)),
+              // currentAccountPicture: CircleAvatar(
+              //   backgroundImage: NetworkImage(profileImageUrl ?? 'default_image_url'),
+              // ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.red[700] ?? Colors.red, // Providing a fallback non-nullable color
+        Colors.red[300] ?? Colors.redAccent, // Fallback non-nullable color
+          ]),
               ),
-              ListTile(
-                leading: Icon(Icons.exit_to_app), // Icon for "Log-Out"
-                title: Text('Log-Out'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _handleLogout();
-                },
-              ),
-            ],
-          ),
+            ),
+            _buildDrawerItem(Icons.account_circle, 'Profile', () => _showProfile(widget.sessionId)),
+            _buildDrawerItem(Icons.history, 'Transactions', () => _navigateToTransactions(widget.sessionId)
+            ),
+            Divider(thickness: 1, color: Colors.grey.shade400),
+            _buildDrawerItem(Icons.settings, 'Settings', () => _navigateToSettings()),
+            _buildDrawerItem(Icons.help, 'Help Center', () => _navigateToHelpCenter()),
+            _buildDrawerItem(Icons.description, 'Terms and Conditions', () => _navigateToTermsAndConditions()),
+  ],
         ),
+      ),
+      Container(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        child: ListTile(
+          leading: Icon(Icons.exit_to_app),
+          title: Text('Log-Out'),
+          onTap: () => _confirmLogout(context),
+        ),
+      ),
+    ],
+  ),
+),
         body: Column(
           children: [
            
@@ -749,283 +733,228 @@ Future<void> _loadUserData() async {
                 
               ),
             ),
-            Expanded(
-              child: filteredMechanicUsers
-                      .isNotEmpty // Check if mechanicUsers is not empty
-                  ? ListView.builder(
-                      itemCount: filteredMechanicUsers.length,
-                      itemBuilder: (context, index) {
-                        // Sort mechanic users based on distance here
-                        filteredMechanicUsers.sort((user1, user2) {
-                          final isLogged1 = user1['isLogged'] as bool? ?? false;
-                          final isLogged2 = user2['isLogged'] as bool? ?? false;
+           Expanded(
+  child: filteredMechanicUsers.isNotEmpty
+      ? ListView.builder(
+          itemCount: filteredMechanicUsers.length,
+          itemBuilder: (context, index) {
+            final user = filteredMechanicUsers[index];
+            final location = user['location'];
+            final latitude = location != null ? location['latitude'] as double? : null;
+            final longitude = location != null ? location['longitude'] as double? : null;
+            final address = location != null ? location['address'] as String? : null;
+            final tariff = user['tariff'] != null ? '\$${user['tariff']}' : 'Unknown';
 
-                          if (isLogged1 != isLogged2) {
-                            return isLogged1
-                                ? -1
-                                : 1; // Online users come before offline users
-                          }
-
-                          final location1 = user1['location'];
-                          final location2 = user2['location'];
-                          final latitude1 = location1 != null
-                              ? location1['latitude'] as double?
-                              : null;
-                          final longitude1 = location1 != null
-                              ? location1['longitude'] as double?
-                              : null;
-                          final latitude2 = location2 != null
-                              ? location2['latitude'] as double?
-                              : null;
-                          final longitude2 = location2 != null
-                              ? location2['longitude'] as double?
-                              : null;
-
-                          if (latitude1 != null &&
-                              longitude1 != null &&
-                              latitude2 != null &&
-                              longitude2 != null) {
-                            final distance1 = calculateDistance(
-                              _locationData?.latitude,
-                              _locationData?.longitude,
-                              latitude1,
-                              longitude1,
-                            );
-                            final distance2 = calculateDistance(
-                              _locationData?.latitude,
-                              _locationData?.longitude,
-                              latitude2,
-                              longitude2,
-                            );
-                            return distance1.compareTo(distance2);
-                          }
-                          return 0; // Handle cases where location data is missing or invalid
-                        });
-
-                        final user = filteredMechanicUsers[index];
-                        // child: filteredMechanicUsers.isNotEmpty
-                        //     ? ListView.builder(
-                        //         itemCount: filteredMechanicUsers.length,
-                        //         itemBuilder: (context, index) {
-                        //           final user = filteredMechanicUsers[index];
-
-                        final location = user['location'];
-                        final latitude = location != null
-                            ? location['latitude'] as double?
-                            : null;
-                        final longitude = location != null
-                            ? location['longitude'] as double?
-                            : null;
-                        final address = location != null
-                            ? location['address'] as String?
-                            : null;
-                        final city = location != null
-                            ? location['city'] as String?
-                            : null;
-                        final tariff = user['tariff'] != null ? '\$${user['tariff']}' : 'Unknown';
-
-                        return Card(
-  elevation: 4,
-  margin: EdgeInsets.all(8.0),
-  child: Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center, // Center the children vertically
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: <Widget>[
-        ListTile(
-          isThreeLine: true, // Allows for a denser layout if needed
-          contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
-          // leading: CircleAvatar(
-          //   // Placeholder for user icon or image
-          //   backgroundImage: NetworkImage(user['imageUrl'] ?? 'default_image_url'),
-          // ),
-          title: Text(
-            '${user['firstName'] ?? 'Unknown'} ${user['lastName'] ?? ''}',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: Colors.red.shade700, // Your app's main color
-            ),
-            textAlign: TextAlign.center,
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
+            return Card(
+              elevation: 4,
+              margin: EdgeInsets.all(8.0),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    ListTile(
+                      // leading: CircleAvatar(
+                      //   backgroundImage: NetworkImage(user['imageUrl'] ?? 'default_placeholder_image_url'),
+                      //   radius: 25,
+                      // ),
+                      title: Text(
+                        '${user['firstName'] ?? 'Unknown'} ${user['lastName'] ?? ''}',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.blueAccent),
+                      ),
+                      subtitle: Row(
+                        children: <Widget>[
+                          Icon(Icons.phone, color: Colors.grey.shade600, size: 18),
+                          SizedBox(width: 5),
+                          Text(
+                            '${user['phoneNumber'] ?? 'Unknown'}',
+                            style: TextStyle(color: Colors.grey.shade700, fontSize: 16),
+                          ),
+                          Spacer(),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: user['isLogged'] ? Colors.green : Colors.red,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              user['isLogged'] ? 'Available' : 'Unavailable',
+                              style: TextStyle(color: Colors.white, fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 8),
                     Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Icon(Icons.phone, size: 15, color: Colors.lightBlue),
-          // SizedBox(width: 4),
-          Expanded( // Use Expanded for the phone number to ensure it fills the available space.
-      child: Text(
-            '${user['phoneNumber'] ?? 'Unknown'}',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 16,
-                  ),
-                   
-                   textAlign: TextAlign.center,
-                ),
-          ),
-                        // Spacer(),
-                        Align(
-      alignment: Alignment.topRight, // This will align the container to the right.
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-        decoration: BoxDecoration(
-          color: user['isLogged'] == true ? Colors.green : Colors.red,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          user['isLogged'] == true ? 'Available' : 'Unavailable',
-          style: TextStyle(color: Colors.white, fontSize: 12),
-        ),
-      
-      ),
+                      children: [
+                        Icon(Icons.home, color: Colors.deepPurple),
+                        SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            'Address: $address',
+                            style: TextStyle(fontSize: 16, color: Colors.deepPurple),
+                          ),
                         ),
                       ],
                     ),
                     SizedBox(height: 4),
-                    Text(
-                      address ?? 'Unknown',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.grey[600]),
-                      
+                    Row(
+                      children: [
+                        Icon(Icons.map, color: Colors.orange),
+                        SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            'Distance: ${latitude != null && longitude != null ? '${(calculateDistance(_locationData?.latitude, _locationData?.longitude, latitude, longitude) / 1000).toStringAsFixed(2)} km' : 'Not Available'}',
+                            style: TextStyle(fontSize: 16, color: Colors.orange),
+                          ),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 4),
                     Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.location_searching, size: 15, color: Colors.lightGreen),
-          SizedBox(width: 4),
-          Text(
-            latitude != null && longitude != null
-                ? '${calculateDistance(_locationData?.latitude, _locationData?.longitude, latitude, longitude).toStringAsFixed(2)} meters'
-                : 'Distance not available',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 16,
+                      children: [
+                        Icon(Icons.directions_car, color: Colors.blueGrey),
+                        SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            '${user['VehicleType'] ?? 'Unknown'} Mechanic',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.attach_money, color: Colors.green),
+                        SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            'Tariff: ${tariff}',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Divider(),// Visual separator
+        Row(
+  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  children: <Widget>[
+    // Call Button
+    TextButton.icon(
+      icon: Icon(Icons.phone, color: Colors.blue, size: 24),
+      label: Text('Call', style: TextStyle(color: Colors.blue, fontSize: 16)),
+      onPressed: () => callUser(user['phoneNumber']),
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+        shadowColor: Colors.blue.withOpacity(0.2),
+        elevation: 2,
+      ),
+    ),
+    // Message Button
+    TextButton.icon(
+      icon: Icon(Icons.message, color: Colors.green, size: 24),
+      label: Text('Message', style: TextStyle(color: Colors.green, fontSize: 16)),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ChatMessagesTest(sessionId: widget.sessionId, user: user['_id'], firstName: user['firstName'], lastName: user['lastName'])),
+        );
+      },
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+        shadowColor: Colors.green.withOpacity(0.2),
+        elevation: 2,
+      ),
+    ),
+    // Book Button
+    TextButton.icon(
+      icon: Icon(Icons.book_online, color: Colors.red, size: 24),
+      label: Text('Book', style: TextStyle(color: Colors.red, fontSize: 16)),
+      onPressed: () {
+        if (latitude != null && longitude != null) {
+          Map<String, dynamic> userIdMap = user;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SingleDriver(sessionId: widget.sessionId, mechanicUsers: [userIdMap]),
             ),
-          ),
-        ],
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      '${user['VehicleType'] ?? 'Unknown'} Mechanic',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-          'Tariff: P50-P250',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[600],
-          ),
-                    ),
-                  
-                
-                Divider(), // Visual separator
-        ButtonBar(
-          alignment: MainAxisAlignment.spaceEvenly, // Spread the buttons evenly across the horizontal axis
-          buttonPadding: EdgeInsets.symmetric(horizontal: 12.0), // Add padding around the buttons
-          children: <Widget>[
-          IconButton(
-                      icon: Icon(Icons.phone),
-                      onPressed: () {
-                        callUser(user['phoneNumber']);
-                      },
-                    ),
-                    IconButton(
-  icon: Icon(Icons.message),
-  onPressed: () {
-    // Navigate to the MessagePage
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ChatMessages()),
-    );
-  },
-),
+          );
+        } else {
+          // Handle null latitude/longitude
+        }
+      },
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+        shadowColor: Colors.red.withOpacity(0.2),
+        elevation: 2,
+      ),
+    ),
+  ],
+)
 
-                    IconButton(
-  icon: Icon(Icons.build),
-  onPressed: () {
-    if (latitude != null && longitude != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MapPage(
-            sessionId: widget.sessionId,
-            mechanicUsers: widget.filteredMechanicUsers,
- // Pass the mechanic ID
-          ),
-        ),
-      );
-    } else {
-      // Handle null latitude/longitude
-    }
-  },
-                    ),
+
+
+
+
+
       
-                                    ]
-                                    )
-      
-    ]
+          ]
     )
   ),
-    )]
+    
           
-  ),
-                        ));
-                      },
+  
+    
+      );
+      },
                     )
                   : Center(
                       child: Text('No Mechanics found.'),
-                    ),
-            ),
-          ],
-        ),
-       
-       
-  
-      bottomNavigationBar: BottomNavigationBar(
+                    
+            
+          
         
-      items: const <BottomNavigationBarItem>[
-         BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-         BottomNavigationBarItem(
-             icon: Icon(Icons.message),
-             label: 'Messages',
-         ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.location_on),
-             label: 'Map',
-           ),
+       
+       
+  // bottomNavigationBar: buildNavigationBar(context),
+      // bottomNavigationBar: BottomNavigationBar(
+        
+      // items: const <BottomNavigationBarItem>[
+      //    BottomNavigationBarItem(
+      //       icon: Icon(Icons.home),
+      //       label: 'Home',
+      //     ),
+      //   //  BottomNavigationBarItem(
+      //   //      icon: Icon(Icons.message),
+      //   //      label: 'Messages',
+      //   //  ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.location_on),
+      //        label: 'Map',
+      //      ),
            
  
-        ],
-        currentIndex: _selectedIndex,
+      //   ],
+      //   currentIndex: _selectedIndex,
         
-        selectedItemColor: Colors.red,
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-       ),
+      //   selectedItemColor: Colors.red,
+      //   unselectedItemColor: Colors.grey,
+      //   onTap: _onItemTapped,
+      //  ),
   
       ),
   
     
       
   
-    );
+    )
+    ])))
+  ;
     
   }
   

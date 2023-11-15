@@ -25,15 +25,17 @@ class _ChatListState extends State<ChatList> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) {
-            return ChatMessageWidget(
-              messageContent: widget.messageText,
-              messageType: widget.isMessageRead ? "sender" : "receiver",
-            );
-          }),
-        );
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(builder: (context)
+        //   //  {
+        //   //   // return ChatMessageWidget(
+        //   //   //   messageContent: widget.messageText,
+        //   //   //   messageType: widget.isMessageRead ? "sender" : "receiver",
+        //   //   // );
+        //   // }
+        //   ),
+        // );
       },
       child: Container(
         padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),

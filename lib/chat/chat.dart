@@ -1,212 +1,119 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../chat/ChatList/chat_list.dart';
-import '../pages/driver_page.dart';
-import '../map/driver_map.dart';
-import '../profile/profile_overview.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
+void main() => runApp(MyApp());
 
-class ChatUsers {
-  String name;
-  String secondaryText;
-  String imageURL;
-  String time;
-  String messageText;
-
-  ChatUsers({
-    required this.name,
-    required this.secondaryText,
-    required this.imageURL,
-    required this.time,
-    required this.messageText,
-  });
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Real-time Messages',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: MessageListScreen(),
+    );
+  }
 }
 
-class ChatPage extends StatefulWidget {
-  
+class Message {
+  final String id;
+  final String senderId;
+  final String receiverId;
+  final String content;
+  final DateTime timestamp;
+  final bool read;
+
+  Message({
+    required this.id,
+    required this.senderId,
+    required this.receiverId,
+    required this.content,
+    required this.timestamp,
+    required this.read,
+  });
+
+  factory Message.fromMap(Map<String, dynamic> map) {
+    return Message(
+      id: map['_id'],
+      senderId: map['senderId'],
+      receiverId: map['receiverId'],
+      content: map['content'],
+      timestamp: DateTime.parse(map['timestamp']),
+      read: map['read'],
+    );
+  }
+}
+
+class MessageListScreen extends StatefulWidget {
+  @override
+  _MessageListScreenState createState() => _MessageListScreenState();
+}
+
+class _MessageListScreenState extends State<MessageListScreen> {
+  List<Message> _messages = [];
+  late IO.Socket socket;
 
   @override
-  _ChatPageState createState() => _ChatPageState();
-  
-}
+  void initState() {
+    super.initState();
+    _initSocket();
+  }
 
+  void _initSocket() {
+    socket = IO.io('http://your_socket_io_server_address', <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': false,
+    });
 
-class _ChatPageState extends State<ChatPage> {
-  int _selectedIndex = 0;
-  List<ChatUsers> chatUsers = [
-    ChatUsers(
-      name: "Jane Russel",
-      secondaryText: "Awesome Setup",
-      imageURL: "images/userImage1.jpeg",
-      time: "Now",
-      messageText: "Hello, how are you?",
-    ),
-    ChatUsers(
-      name: "Glady's Murphy",
-      secondaryText: "That's Great",
-      imageURL: "images/userImage2.jpeg",
-      time: "Yesterday",
-      messageText: "Hi there!",
-    ),
-    // Add similar entries for other users
-  ];
-  // void _onItemTapped(int index) {
-  //   setState(() {
-  //     _selectedIndex = index;
-  //   });
+    socket.connect();
 
-  //   if (index == 1) {
-  //     // Messages tab
-  //     Navigator.push(
-  //       context,
-  //       MaterialPageRoute(
-  //         builder: (context) => ChatPage(),
-  //       ),
-  //     );
-  //   } else if (index == 2) {
-  //     // Favorites tab
-  //     Navigator.push(
-  //       context
-  //       // MaterialPageRoute(
-  //       //   builder: (context)
-  //         //  => MapPage(
-  //         //   // sessionId: widget.sessionId, // Pass the session ID
-  //         //   // mechanicUsers: mechanicUsers,
-            
-  //         //    // Pass the list of mechanics
-            
-           
-  //         // ),
-      
-  //       )
-      
-  //   } else if (index == 3) {
-  //     // Profile tab
-  //     // _showProfile(widget.sessionId); // Replace _yourUserId with the user's ID
-  //   }
-  // }
+    socket.onConnect((_) {
+      print('connect');
+      socket.emit('getMessages', {'userId': 'your_user_id'});
+    });
 
-  void _showProfile(String userId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProfileOverview(sessionId: userId),
-      ),
-    );
+    socket.on('message', (data) {
+      setState(() {
+        _messages.insert(0, Message.fromMap(json.decode(data)));
+      });
+    });
+
+    socket.onDisconnect((_) => print('disconnect'));
+    socket.onError((data) => print(data));
+  }
+
+  @override
+  void dispose() {
+    socket.disconnect();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        physics: BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            SafeArea(
-              child: Padding(
-                padding: EdgeInsets.only(left: 16, right: 16, top: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text(
-                      "Conversations",
-                      style:
-                          TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                    ),
-                    Container(
-                      padding:
-                          EdgeInsets.only(left: 8, right: 8, top: 2, bottom: 2),
-                      height: 30,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        color: Colors.pink[0],
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          // Icon(
-                          //   Icons.add,
-                          //   color: Colors.pink,
-                          //   size: 20,
-                          // ),
-                          // SizedBox(
-                          //   width: 2,
-                          // ),
-                          // Text(
-                          //   "Add New",
-                          //   style: TextStyle(
-                          //       fontSize: 14, fontWeight: FontWeight.bold),
-                          // ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Padding(
-            //   padding: EdgeInsets.only(top: 16, left: 16, right: 16),
-            //   child: TextField(
-            //     decoration: InputDecoration(
-            //       hintText: "Search...",
-            //       hintStyle: TextStyle(color: Colors.grey.shade600),
-            //       prefixIcon: Icon(
-            //         Icons.search,
-            //         color: Colors.grey.shade600,
-            //         size: 20,
-            //       ),
-            //       filled: true,
-            //       fillColor: Colors.grey.shade100,
-            //       contentPadding: EdgeInsets.all(8),
-            //       enabledBorder: OutlineInputBorder(
-            //           borderRadius: BorderRadius.circular(20),
-            //           borderSide: BorderSide(
-            //             color: Colors.grey.shade100,
-            //           )),
-            //     ),
-            //   ),
-            // ),
-            ListView.builder(
-              itemCount: chatUsers.length,
-              shrinkWrap: true,
-              padding: EdgeInsets.only(top: 16),
-              physics: NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                return ChatList(
-                  name: chatUsers[index].name,
-                  messageText: chatUsers[index].messageText,
-                  imageUrl: chatUsers[index].imageURL,
-                  time: chatUsers[index].time,
-                  isMessageRead: (index == 0 || index == 3) ? true : false,
-                );
-              },
-            ),
-          ],
-        ),
+      appBar: AppBar(
+        title: Text('Real-time Messages'),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        
-      items: const <BottomNavigationBarItem>[
-         BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-         BottomNavigationBarItem(
-             icon: Icon(Icons.message),
-             label: 'Messages',
-         ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.location_on),
-             label: 'Map',
-           ),
-           
- 
-        ],
-        currentIndex: _selectedIndex,
-        
-        selectedItemColor: Colors.red,
-        unselectedItemColor: Colors.grey,
-        // onTap: _onItemTapped,
-       ),
+      body: ListView.builder(
+        itemCount: _messages.length,
+        itemBuilder: (context, index) {
+          final message = _messages[index];
+          return ListTile(
+            leading: CircleAvatar(
+              child: Text(message.senderId.substring(0, 1)),
+            ),
+            title: Text(message.content),
+            subtitle: Text(message.timestamp.toLocal().toString()),
+            trailing: Icon(
+              message.read ? Icons.visibility : Icons.visibility_off,
+              color: message.read ? Colors.green : Colors.red,
+            ),
+          );
+        },
+      ),
     );
   }
 }

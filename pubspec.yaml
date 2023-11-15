@@ -56,6 +56,9 @@ dependencies:
   flutter_polyline_points: ^1.0.0
   image_picker: ^1.0.4
   flutter_map_marker_popup: ^4.1.0
+  persistent_bottom_nav_bar: ^5.0.2
+  sliding_up_panel: ^2.0.0+1
+  shared_preferences: ^2.0.13
 
   # dartleaf: ^1.1.4
   # flutter_map_location_marker: ^6.0.0
@@ -66,6 +69,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+
+
 flutter_launcher_icons:
   android: "launcher_icon"
   adaptive_icon_background: "#ffff"
@@ -73,6 +78,7 @@ flutter_launcher_icons:
   ios: false
   image_path: "assets/beta_icon.png"
 
+  
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -89,6 +95,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/temp2.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
