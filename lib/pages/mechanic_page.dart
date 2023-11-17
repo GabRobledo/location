@@ -719,7 +719,13 @@ void _handleDecline(String bookingId) {
   socketService.socket?.emit('declineBooking', bookingId);
   // Implement decline logic
 }
-
+Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
+  return ListTile(
+    leading: Icon(icon, color: Colors.grey), // Custom icon color
+    title: Text(title),
+    onTap: onTap,
+  );
+}
 
 
 
@@ -733,25 +739,40 @@ void _handleDecline(String bookingId) {
     length: 4, // Number of tabs
     child: Scaffold(
       appBar: AppBar(
-    title: Text(_locationName ?? 'Location Unknown'),
-    leading: Builder(
-      builder: (BuildContext context) {
-        return IconButton(
-          icon: Icon(Icons.menu),
-          onPressed: () {
-            Scaffold.of(context).openDrawer();
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              _locationName ?? 'Location Unknown',
+              style: TextStyle(
+                fontSize: 20.0, // Customize font size
+                fontWeight: FontWeight.bold, // Bold font
+                // Add font family if you have one
+              ),
+            ),
+            Text(
+              'Bookings',
+              style: TextStyle(
+                fontSize: 16.0, // Smaller font size for subtitle
+                fontWeight: FontWeight.normal,
+                // Font family can be added here as well
+              ),
+            ),
+          ],
+        ),
+        centerTitle: true, // Center the title column
+        leading: Builder(
+          builder: (BuildContext context) {
+            return IconButton(
+              icon: Icon(Icons.menu),
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
+            );
           },
-        );
-      },
     ),
     actions: [
-      IconButton(
-        icon: Icon(Icons.account_circle),
-        onPressed: () {
-          _showProfile(widget.sessionId);
-            // Define the action when the profile button is tapped
-          },
-        ),
       ],
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -764,102 +785,73 @@ void _handleDecline(String bookingId) {
         ),
       ),
       drawer: Drawer(
-        child: Column(
+  child: Column(
+    children: [
+      Expanded(
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  UserAccountsDrawerHeader(
-                    accountName: Text(displayName),
-                    accountEmail: null, // Add email if available
-                    decoration: BoxDecoration(
-                      color: Colors.blue[800], // Dark blue color for header
-                    ),
-                      ),
-                      ListTile(
-                        leading:
-                            Icon(Icons.account_circle), // Icon for "Profile"
-                        title: Text('Profile'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showProfile(widget.sessionId);
-                        },
-                      ),
-                     
-                      ListTile(
-                        leading: Icon(Icons.history), // Icon for "Transactions"
-                        title: Text('Transactions'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TransactionsPage(bookingId: widget.sessionId),
-                            ),
-                          );
-                        },
-                      ),
-                      Divider(),
-                      Container(
-                        height: 1, // Set the height for the line
-                        decoration: BoxDecoration(
-                          color: Colors.grey, // Choose the color you prefer
-                        ),
-                      ),
-                      Divider(
-                        height: 20, 
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.settings), // Icon for "Settings"
-                        title: Text('Settings'),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => SettingsPage()),
-                          );
-                        },
-                      ),
-                      ListTile(
-                        leading: Icon(Icons.help), // Icon for "Help Center"
-                        title: Text('Help Center'),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => HelpCenterPage()),
-                          );
-                        },
-                      ),
-                      ListTile(
-                        leading: Icon(Icons
-                            .description), // Icon for "Terms and Conditions"
-                        title: Text('Terms and Conditions'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TermsAndConditionsPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                ListTile(
-                  leading: Icon(Icons.exit_to_app), // Icon for "Log-Out"
-                  title: Text('Log-Out'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _handleLogout();
-                  },
-                ),
-              ],
+            UserAccountsDrawerHeader(
+              accountName: Text(
+                displayName,
+                style: TextStyle(fontWeight: FontWeight.bold), // Custom font style
+              ),
+              accountEmail: null, // Add email if available
+              // currentAccountPicture: CircleAvatar(
+              //   backgroundImage: NetworkImage(userProfileImage), // Add profile image
+              //   backgroundColor: Colors.white,
+              // ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor, // Use theme color
+              ),
             ),
-          ),
+            _buildDrawerItem(Icons.account_circle, 'Profile', () {
+              Navigator.pop(context);
+              _showProfile(widget.sessionId);
+            }),
+            _buildDrawerItem(Icons.history, 'Transactions', () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TransactionsPage(bookingId: widget.sessionId),
+                ),
+              );
+            }),
+            Divider(),
+            _buildDrawerItem(Icons.settings, 'Settings', () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SettingsPage()),
+              );
+            }),
+            _buildDrawerItem(Icons.help, 'Help Center', () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => HelpCenterPage()),
+              );
+            }),
+            _buildDrawerItem(Icons.description, 'Terms and Conditions', () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TermsAndConditionsPage()),
+              );
+            }),
+          ],
+        ),
+      ),
+      ListTile(
+        leading: Icon(Icons.exit_to_app), // Icon for "Log-Out"
+        title: Text('Log-Out'),
+        onTap: () {
+          Navigator.pop(context);
+          _handleLogout();
+        },
+      ),
+    ],
+  ),
+),
           
           body: Column(
             children: [

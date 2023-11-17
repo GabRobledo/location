@@ -63,7 +63,7 @@ class _MessageListScreenState extends State<MessageListScreen> {
   }
 
   void _initSocket() {
-    socket = IO.io('http://your_socket_io_server_address', <String, dynamic>{
+    socket = IO.io('https://0dde-2001-4454-415-8a00-410c-ed4c-8569-e71.ngrok-free.app/', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
     });

@@ -102,12 +102,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         title: Text('Transactions'),
         backgroundColor: Colors.blueGrey,
         actions: <Widget>[
-          // IconButton(
-          //   icon: Icon(Icons.search, color: Colors.white),
-          //   onPressed: () {
-          //     // Implement search functionality here
-          //   },
-          // ),
+         
           IconButton(
             icon: Icon(Icons.refresh, color: Colors.white),
             onPressed: _fetchTransactions,

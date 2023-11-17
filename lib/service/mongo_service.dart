@@ -177,6 +177,55 @@ Future<List<Map<String, dynamic>>?> getDriverUsers() async {
   return null;
 }
 
+Future<bool> updateUserProfile(String userId, Map<String, dynamic> updatedFields) async {
+  final db = await getDb();
+  final collection = db.collection('users');
+
+  try {
+    var objectId = ObjectId.fromHexString(userId);  // Convert to ObjectId
+    final currentDocument = await collection.findOne({'_id': userId});
+
+    if (currentDocument == null) {
+      print("Error: User document not found. $userId");
+      return false;
+    }
+
+    final updateFields = <String, dynamic>{};
+    final changesLog = <String, Map<String, dynamic>>{};
+
+    updatedFields.forEach((key, value) {
+      final currentValue = currentDocument[key];
+      updateFields[key] = value;  // Simplified
+
+      if (currentValue != value) {
+        changesLog[key] = {'from': currentValue, 'to': value};
+      }
+    });
+
+    if (changesLog.isNotEmpty) {
+      print('Field changes:');
+      print(changesLog);
+    }
+
+    var result = await collection.updateOne(
+      {'_id': userId}, 
+      {'\$set': updateFields},  // Corrected usage of $set
+    );
+
+    print('Update acknowledged: ${result.isAcknowledged}');
+    return result.isAcknowledged;
+  } catch (e) {
+    print("Error updating user profile: $e");
+    return false;
+  }
+}
+
+
+
+
+
+
+
 Future<void> sendMessageToDb(String senderId, String receiverId, String content) async {
   final db = await getDb();
   final collection = db.collection('messages');

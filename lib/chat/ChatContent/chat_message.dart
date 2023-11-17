@@ -150,7 +150,7 @@ class _ChatMessagesState extends State<ChatMessages> {
 
   void _initSocket() {
     // Replace with your actual server URL and socket connection options
-    socket = IO.io('https://63a5-2001-4454-415-8a00-d420-28e1-55cb-d200.ngrok-free.app', <String, dynamic>{
+    socket = IO.io('https://0dde-2001-4454-415-8a00-410c-ed4c-8569-e71.ngrok-free.app/', <String, dynamic>{
       'transports': ['websocket'],
       // 'autoConnect': false,
     });

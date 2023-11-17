@@ -74,7 +74,7 @@ class _DriverPageState extends State<DriverPage> {
   
   
 
-  // final List<String> _messages = [];
+
 
   TextEditingController searchController = TextEditingController();
 
@@ -98,28 +98,7 @@ class _DriverPageState extends State<DriverPage> {
     };
     socketService.startSocketConnection();
 
-    // socketService.socket?.on('message', (data) async {
-    //   // Assuming data includes senderId, content, and chatRoomId
-    //   final senderId = data['senderId'];
-    //   final content = data['content'];
-    //   final chatRoomId = data['chatRoomId'];
-
-    //   // Save the received message to MongoDB
-    //   await saveChatMessage(senderId, content, chatRoomId);
-
-    //   // Update the UI with the new message
-    //   setState(() {
-    //     _messages.add(data.toString());
-    //     print('Received message: $data');
-    //   });
-    // });
-
-    // socket?.on('message', (data) {
-    //   setState(() {
-    //     _messages.add(data);
-    //     print('Received message: $data'); // Add this print statement
-    //   });
-    // });
+  
     socketService.socket?.on("driverLocationUpdate", (data) {
       print('socketdata driver');
       print(data);
@@ -296,8 +275,7 @@ class _DriverPageState extends State<DriverPage> {
   }
 
   Future<void> fetchMechanicUsers() async {
-    // Fetch mechanic users data
-    // final List<Map<String, dynamic>>? users = await getMechanicUsers();
+    
     final List<Map<String, dynamic>>? users = await getMechanicUsers();
 
     // Sort the users based on distance
@@ -355,9 +333,9 @@ class _DriverPageState extends State<DriverPage> {
       for (int i = 0; i < mechanicUsers.length; i++) {
         if (mechanicUsers[i]['_id'] == userId) {
           setState(() {
-            // mechanicUsers[i]['isLogged'] = isLogged;
-            // filteredMechanicUsers = List.from(
-            //     mechanicUsers.where((user) => user['isLogged'] == true));
+            mechanicUsers[i]['isLogged'] = isLogged;
+            filteredMechanicUsers = List.from(
+                mechanicUsers.where((user) => user['isLogged'] == true));
           });
           sortMechanicUsers();
           break;
@@ -397,16 +375,7 @@ class _DriverPageState extends State<DriverPage> {
       _selectedIndex = index;
     });
 
-    // if (index == 1) {
-    //   // Messages tab
-    //   Navigator.push(
-    //     context,
-    //     MaterialPageRoute(
-    //       builder: (context) => ChatPageNew(),
-    //     ),
-    //   );
-    // } 
-    // else 
+   
     if (index == 1) {
       // Favorites tab
       Navigator.push(
@@ -416,17 +385,14 @@ class _DriverPageState extends State<DriverPage> {
             sessionId: widget.sessionId, // Pass the session ID
             mechanicUsers: mechanicUsers,
             
-             // Pass the list of mechanics
+           
             
            
           ),
         ),
       );
     }
-    //  else if (index == 3) {
-    //   // Profile tab
-    //   _showProfile(widget.sessionId); // Replace _yourUserId with the user's ID
-    // }
+   
   }
   // Function to navigate to the Transactions page
   void _navigateToTransactions(String sessionId) {
@@ -470,10 +436,7 @@ class _DriverPageState extends State<DriverPage> {
   
 
   void _handleLogout() {
-    // Implement your logout logic here.
-    // This might include clearing user session data, etc.
-
-    // Navigate back to the login page.
+   
     Navigator.of(context).pushReplacement(MaterialPageRoute(
       builder: (context) => LoginPage(), // Replace with your login page widget
     ));
@@ -599,59 +562,82 @@ List<Widget> _buildScreens() {
           ],
       ),
       actions: <Widget>[
-        SizedBox(
-          width: 50, // Adjust the width as needed
-          height: 50, // Adjust the height as needed
-          child: IconButton(
-            icon: Icon(Icons.location_on_outlined, size: 25), // Adjust the size of the icon
-            onPressed: () {
+  // Inbox Button inside a SizedBox
+  SizedBox(
+    width: 50, // Adjust the width as needed
+    height: 50, // Adjust the height as needed
+    child: IconButton(
+      icon: Icon(Icons.email_outlined, size: 25),
+      onPressed: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => MapPageTest(sessionId: widget.sessionId,mechanicUsers: mechanicUsers,)),
+          MaterialPageRoute(builder: (context) => MessageListScreen()), // Navigate to MessageListScreen
         );
       },
-          ),
-        ),
-        // SizedBox(
-        //   width: 50, // Adjust the width as needed
-        //   height: 50, // Adjust the height as needed
-        //   child: IconButton(
-        //     icon: Icon(Icons.message_outlined, size: 25), // Adjust the size of the icon
-        //     onPressed: () {
-        //       // TODO: Add your Messages icon's functionality here
-        //     },
-        //   ),
-        // ),
-      ],
+    ),
+  ),
+  // Location Button
+  IconButton(
+    icon: Icon(Icons.location_on_outlined, size: 25), // Adjust the size of the icon
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => MapPageTest(sessionId: widget.sessionId, mechanicUsers: mechanicUsers)),
+      );
+    },
+  ),
+  // Refresh Button
+  // ... Your Refresh Button code here ...
+],
+
+    
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight + 42.0), // Adjust the height as needed
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8.0, 6.0, 8.0, 0),
-              child: Material(
-                borderRadius: BorderRadius.circular(30.0), // Make it rounded
-                elevation: 2.0,
-                child: TextField(
-                  controller: searchController,
-                  onChanged: _filterMechanicUsers,
-                  decoration: InputDecoration(
-                    labelText: 'Search',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30.0), // Make it rounded
-                    ),
-                  ),
+    preferredSize: const Size.fromHeight(kToolbarHeight + 80.0),
+    child: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12.0, 8.0, 12.0, 4.0),
+          child: Material(
+            borderRadius: BorderRadius.circular(32.0),
+            elevation: 1.0,
+            child: TextField(
+              controller: searchController,
+              onChanged: _filterMechanicUsers,
+              decoration: InputDecoration(
+                labelText: 'Search',
+                labelStyle: TextStyle(color: Colors.black), // Dark color for visibility
+                prefixIcon: Icon(Icons.search, color: Colors.black), // Black icon for visibility
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(32.0),
+                  borderSide: BorderSide.none,
                 ),
+                filled: true,
+                fillColor: Colors.white, // White background for the search bar
               ),
             ),
-            TabBar(
-        isScrollable: true, // Set this to true to enable scrolling
-        tabs: [
-                Tab(text: "All"),
-                Tab(text: "Motorcycle"),
-                Tab(text: "Bicycle"),
-                Tab(text: "Automotive"), // The new "All" tab
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            'List of Mechanics',
+            style: TextStyle(
+              fontSize: 18.0,
+              fontWeight: FontWeight.bold,
+              color: Colors.white, // White for contrast
+            ),
+          ),
+        ),
+        TabBar(
+          isScrollable: true,
+          indicatorSize: TabBarIndicatorSize.label,
+          labelColor: Colors.white, // White color for contrast
+          unselectedLabelColor: Colors.white.withOpacity(0.5), // Lighter shade for unselected tabs
+          tabs: [
+            Tab(text: "All"),
+            Tab(text: "Motorcycle"),
+            Tab(text: "Bicycle"),
+            Tab(text: "Automotive"),
               ],
               onTap: (index) {
                 // Handle the tap event and perform actions based on the tab
@@ -674,8 +660,10 @@ List<Widget> _buildScreens() {
                 });
               },
             ),
+            
           ],
         ),
+        
       ),
       
     ),
@@ -706,7 +694,7 @@ List<Widget> _buildScreens() {
             ),
             Divider(thickness: 1, color: Colors.grey.shade400),
             _buildDrawerItem(Icons.settings, 'Settings', () => _navigateToSettings()),
-            _buildDrawerItem(Icons.help, 'Help Center', () => _navigateToHelpCenter()),
+            _buildDrawerItem(Icons.help, 'FAQ', () => _navigateToHelpCenter()),
             _buildDrawerItem(Icons.description, 'Terms and Conditions', () => _navigateToTermsAndConditions()),
   ],
         ),
@@ -895,108 +883,32 @@ List<Widget> _buildScreens() {
       ),
     ),
   ],
-)
-
-
-
-
-
-
-      
+)   
           ]
     )
   ),
-    
-          
-  
-    
+
       );
       },
                     )
                   : Center(
                       child: Text('No Mechanics found.'),
-                    
-            
-          
-        
-       
-       
-  // bottomNavigationBar: buildNavigationBar(context),
-      // bottomNavigationBar: BottomNavigationBar(
-        
-      // items: const <BottomNavigationBarItem>[
-      //    BottomNavigationBarItem(
-      //       icon: Icon(Icons.home),
-      //       label: 'Home',
-      //     ),
-      //   //  BottomNavigationBarItem(
-      //   //      icon: Icon(Icons.message),
-      //   //      label: 'Messages',
-      //   //  ),
-      //     BottomNavigationBarItem(
-      //       icon: Icon(Icons.location_on),
-      //        label: 'Map',
-      //      ),
-           
+                    ),
+            ),
+          ],
+        ),
+        // Floating Action Button
+    floatingActionButton: FloatingActionButton(
+      onPressed: () {
+        fetchMechanicUsers(); // Call your fetchMechanicUsers function here
+      },
+      child: Icon(Icons.refresh),
+    ),
+  )
+  );
+  
+}
  
-      //   ],
-      //   currentIndex: _selectedIndex,
-        
-      //   selectedItemColor: Colors.red,
-      //   unselectedItemColor: Colors.grey,
-      //   onTap: _onItemTapped,
-      //  ),
-  
-      ),
-  
-    
-      
-  
-    )
-    ])))
-  ;
-    
-  }
-  
-
-  // // // Widget buildBody(BuildContext context) {
-  // // //   final List<Widget> _pages = [
-  // // //   ProfileOverview(sessionId: userId??''),
-  // // //   ChatPage(),
-  // // //   MapPage(mechanicUsers: mechanicUsers, sessionId: userId??'',),
-  // // //   // ... other pages
-  // // // ];
-  // // //   return Scaffold(
-  // // //     body: IndexedStack(
-  // // //       index: _selectedIndex,
-  // // //       children: _pages,
-  // // //     ),
-  // // //     bottomNavigationBar: BottomNavigationBar(
-  // // //       items: const <BottomNavigationBarItem>[
-  // // //         BottomNavigationBarItem(
-  // // //           icon: Icon(Icons.home),
-  // // //           label: 'Home',
-  // // //         ),
-  // // //         BottomNavigationBarItem(
-  // // //           icon: Icon(Icons.message),
-  // // //           label: 'Messages',
-  // // //         ),
-  // // //         BottomNavigationBarItem(
-  // // //           icon: Icon(Icons.location_on),
-  // // //           label: 'Map',
-  // // //         ),
-  // // //         // ... other tabs ...
-  // // //       ],
-  // // //       currentIndex: _selectedIndex,
-  // // //       selectedItemColor: Colors.red,
-  // // //       unselectedItemColor: Colors.grey,
-  // // //       onTap: _onItemTapped,
-  // // //     ),
-    
-  // //   );
-    
-  // }
-
   void _filterMechanicByVehicleType() {
     setState(() {
       filteredMechanicUsers = mechanicUsers.where((user) {

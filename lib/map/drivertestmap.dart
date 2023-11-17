@@ -7,7 +7,7 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'dart:math' as math;
 import 'package:collection/collection.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 
 class MapPageTest extends StatefulWidget {
   final String sessionId;
@@ -74,6 +74,29 @@ class _MapPageState extends State<MapPageTest> {
     _determinePosition();
     _initSocket();
   }
+  Future<void> callUser(String phoneNumber) async {
+  final Uri launchUri = Uri(
+    scheme: 'tel',
+    path: phoneNumber,
+  );
+  if (await canLaunchUrl(launchUri)) {
+    await launchUrl(launchUri);
+  } else {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Error'),
+        content: Text('Failed to make the phone call.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
   Future<void> _determinePosition() async {
     var locationService = Location();
@@ -88,7 +111,7 @@ class _MapPageState extends State<MapPageTest> {
 
 
   void _initSocket() {
-    socket = IO.io('https://6b62-2001-4454-415-8a00-1c6a-3f66-7555-ddcc.ngrok-free.app/', <String, dynamic>{
+    socket = IO.io('https://0dde-2001-4454-415-8a00-410c-ed4c-8569-e71.ngrok-free.app/', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
     });
@@ -256,14 +279,14 @@ class _MapPageState extends State<MapPageTest> {
                     Text(mechanicMobile),
                   ],
                 ),
-                SizedBox(height: 8),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.call),
-                  label: Text("Call Mechanic"),
-                  onPressed: () {
-                    // Implement call action
-                  },
-                  style: ElevatedButton.styleFrom(primary: Colors.red),
+               SizedBox(height: 8),
+              ElevatedButton.icon(
+                icon: Icon(Icons.call),
+                label: Text("Call Mechanic"),
+                onPressed: () {
+                  callUser(mechanicMobile);
+                },
+                style: ElevatedButton.styleFrom(primary: Colors.red),
                 ),
               ],
             ),
