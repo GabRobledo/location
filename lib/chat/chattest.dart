@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'ChatContent/message_list.dart';
 import 'package:raamb_app/service/mongo_service.dart';
+import 'dart:async';
+
 
 // Model for chat messages
 
@@ -88,17 +90,22 @@ class ChatMessagesTest extends StatefulWidget {
   @override
   _ChatMessagesState createState() => _ChatMessagesState();
 }
-
+enum ConnectionStatus { connected, disconnected, connecting }
 class _ChatMessagesState extends State<ChatMessagesTest> {
-  IO.Socket? socket;
+   IO.Socket? socket;
+  StreamController<List<ChatMessage>> chatStreamController = StreamController.broadcast();
   List<ChatMessage> messages = [];
   TextEditingController messageController = TextEditingController();
   ScrollController scrollController = ScrollController();
+  ConnectionStatus connectionStatus = ConnectionStatus.connecting;
+
 
   @override
   void initState() {
     super.initState();
     _initSocket();
+    
+
   }
 
   @override
@@ -106,48 +113,65 @@ class _ChatMessagesState extends State<ChatMessagesTest> {
     messageController.dispose();
     scrollController.dispose();
     socket?.dispose();
+    chatStreamController.close();
     super.dispose();
   }
 
   void _sendMessage() {
-    final String newMessageContent = messageController.text.trim();
-    if (newMessageContent.isNotEmpty) {
-      var message = {
-        'content': newMessageContent,
-        'senderId': widget.sessionId, // Use sessionId as the sender's ID
-        'receiverId': widget.user, // Use user as the receiver's ID
-      };
+  final String newMessageContent = messageController.text.trim();
+  if (newMessageContent.isNotEmpty) {
+    var message = {
+      'content': newMessageContent,
+      'senderId': widget.sessionId,
+      'receiverId': widget.user,
+    };
 
-      socket?.emit('sendMessage', message);
-      messageController.clear();
+    socket?.emit('sendMessage', message);
+    messageController.clear();
 
-      setState(() {
-        messages.add(ChatMessage(
-          senderId: widget.sessionId,
-          receiverId: widget.user,
-          timestamp: DateTime.now(),
-          messageContent: newMessageContent,
-          read: false,
-        ));
-        _scrollToBottom();
-      });
-    }
+    // Prepare the new message
+    ChatMessage newChatMessage = ChatMessage(
+      senderId: widget.sessionId,
+      receiverId: widget.user,
+      timestamp: DateTime.now(),
+      messageContent: newMessageContent,
+      read: false,
+    );
+
+    // Update the messages list and then update the stream
+    messages.add(newChatMessage);
+    chatStreamController.add(List.from(messages)); // Create a copy of the list
+    _scrollToBottom();
+    
   }
+}
+
+
 
   void _initSocket() {
     // Replace with your actual server URL and socket connection options
-    socket = IO.io('https://0dde-2001-4454-415-8a00-410c-ed4c-8569-e71.ngrok-free.app/', <String, dynamic>{
+    socket = IO.io('https://cf86-2001-4454-415-8a00-20cb-be4f-7389-765c.ngrok-free.app/', <String, dynamic>{
       'transports': ['websocket'],
     });
     socket?.connect();
 
-    socket?.onConnect((_) => print('connected to socket server'));
+    socket?.onConnect((_) {
+      setState(() => connectionStatus = ConnectionStatus.connected);
+      print('connected to socket server');
+    });
     socket?.onConnectError((data) => print('Connection Error: $data'));
     socket?.onError((data) => print('Error socket: $data'));
+    socket?.emit('register', widget.sessionId);
+
 
     socket?.on('receiveMessage', (data) => _onReceiveMessage(data));
     _listenForChatHistory();
     _requestChatHistory();
+    socket?.onDisconnect((_) {
+      setState(() => connectionStatus = ConnectionStatus.disconnected);
+      print('disconnected from socket server');
+    });
+
   }
 
   void _requestChatHistory() {
@@ -157,9 +181,10 @@ class _ChatMessagesState extends State<ChatMessagesTest> {
   void _listenForChatHistory() {
     socket?.on('chatHistoryResponse', (data) {
       final chatHistory = (data as List).map((m) => ChatMessage.fromMap(m)).toList();
-      setState(() {
-        messages = chatHistory;
-      });
+
+      // Update the messages list and then update the stream
+      messages = chatHistory;
+      chatStreamController.add(List.from(messages)); // Create a copy of the list
     });
 
     socket?.on('chatHistoryError', (data) {
@@ -168,22 +193,22 @@ class _ChatMessagesState extends State<ChatMessagesTest> {
   }
 
   void _onReceiveMessage(dynamic data) {
-    print("Received: $data");
-
+  print("Received data: $data"); // Debugging print statement
+  try {
     ChatMessage newMessage = ChatMessage.fromMap(data);
-
-    setState(() {
-      messages.add(newMessage);
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (scrollController.hasClients) {
-        _scrollToBottom();
-      }
-    });
+    messages.add(newMessage);
+    chatStreamController.add(List.from(messages)); // Update the stream
+    _scrollToBottom();
+  } catch (e) {
+    print('Error processing received message: $e'); // Error handling
   }
+}
+
+
+
 
   void _scrollToBottom() {
+  Future.delayed(Duration(milliseconds: 100), () {
     if (scrollController.hasClients) {
       scrollController.animateTo(
         scrollController.position.maxScrollExtent,
@@ -191,60 +216,121 @@ class _ChatMessagesState extends State<ChatMessagesTest> {
         curve: Curves.easeOut,
       );
     }
-  }
+  });
+}
+
+
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Chat Detail"),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        flexibleSpace: SafeArea(
-          child: Container(
-            padding: EdgeInsets.only(right: 16),
-            child: Row(
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      elevation: 2, // Slightly increased elevation for subtle shadow
+      automaticallyImplyLeading: false, // Disable the default leading widget
+      backgroundColor: Colors.white,
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Align items across the main axis
+        children: <Widget>[
+          IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: Icon(Icons.arrow_back, color: Colors.blueGrey), // Custom icon color
+          ),
+          // Displaying user name and online status next to the back button
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  icon: Icon(Icons.arrow_back, color: Colors.black),
+                Text(
+                  '${widget.firstName} ${widget.lastName}',
+                  style: TextStyle(
+                    fontSize: 18, // Increased font size
+                    fontWeight: FontWeight.bold, // Bold font weight
+                    color: Colors.black // Custom text color
+                  )
                 ),
-                SizedBox(width: 2),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text('${widget.firstName} ${widget.lastName}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                      SizedBox(height: 6),
-                      Text("Online", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                    ],
-                  ),
+                SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.green, // Online status color
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      "Online",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic // Italic font style for status
+                      )
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        ),
+          // Connection status text at the right side
+          Text(
+            connectionStatus == ConnectionStatus.connected 
+                ? "Connected" 
+                : (connectionStatus == ConnectionStatus.connecting 
+                  ? "Connecting..." 
+                  : "Disconnected"),
+            style: TextStyle(
+              color: connectionStatus == ConnectionStatus.connected 
+                  ? Colors.green // Green color for connected status
+                  : Colors.red, // Red color for disconnected or connecting status
+              fontWeight: FontWeight.w500 // Medium font weight
+            ),
+          ),
+          SizedBox(width: 16), // To ensure some space after the title
+        ],
       ),
+    
+  
+      ),
+
+
       body: Stack(
         children: <Widget>[
-          ListView.builder(
-            itemCount: messages.length,
-            shrinkWrap: true,
-            padding: EdgeInsets.only(top: 10, bottom: 70),
-            physics: BouncingScrollPhysics(),
-            itemBuilder: (context, index) {
-              return ChatMessageWidgetTest(
-                currentUserId: widget.sessionId,
-                // Pass sessionId as currentUserId here
-                senderId: messages[index].senderId,
-                receiverId: messages[index].receiverId,
-                messageContent: messages[index].messageContent,
-                timestamp: messages[index].timestamp,
-                read: messages[index].read, // Assuming you have a read status
+          StreamBuilder<List<ChatMessage>>(
+  stream: chatStreamController.stream,
+  builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(child: Text("No messages yet"));
+                
+              }
+              if (snapshot.hasError) {
+          print('StreamBuilder error: ${snapshot.error}'); // Debugging print statement
+          // Handle error state
+        }
+
+              List<ChatMessage> messages = snapshot.data!;
+
+              return ListView.builder(
+                controller: scrollController,
+                itemCount: messages.length,
+                itemBuilder: (context, index) {
+                  return ChatMessageWidgetTest(
+                    currentUserId: widget.sessionId,
+                    senderId: messages[index].senderId??'Dunno',
+                    receiverId: messages[index].receiverId??'Dunno',
+                    messageContent: messages[index].messageContent,
+                    timestamp: messages[index].timestamp,
+                    read: messages[index].read,
+                  );
+                },
               );
             },
           ),

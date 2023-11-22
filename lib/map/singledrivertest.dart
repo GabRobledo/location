@@ -4,7 +4,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
 import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:raamb_app/service/mongo_service.dart';
+import 'dart:convert';
 
 class SingleDriverTest extends StatefulWidget {
   final String sessionId;
@@ -21,20 +22,85 @@ class _SingleDriverState extends State<SingleDriverTest> {
   final MapController _mapController = MapController();
   final PopupController _popupLayerController = PopupController();
   IO.Socket? socket;
-  bool isBookingButtonEnabled = true;
+  bool isBookingButtonEnabled = false;
   String bookingStatus = 'No booking made';
 
   @override
   void initState() {
     super.initState();
     _initialize();
+    _fetchTransactions();
   }
 
   Future<void> _initialize() async {
     await _determinePosition();
     _initSocket();
-    _loadInitialState();
+    
+  
   }
+  Future<void> _fetchTransactions() async {
+  int retryCount = 0;
+  const int maxRetries = 10; // Maximum number of retries
+  const int retryDelay = 2; // Delay in seconds between retries
+
+  // Convert mechanicUsers to a list of their _id values
+  List<String> mechanicIds = widget.mechanicUsers.map((mechanic) => mechanic['_id'].toString()).toList();
+
+  while (retryCount < maxRetries) {
+    try {
+      var transactions = await getTransactions(widget.sessionId, mechanicIds);
+      var hasBooking = await hasBookings(widget.sessionId, mechanicIds);
+      
+      bool hasOngoingTransaction = false;
+      String latestStatus = 'No booking made'; // Initializing latestStatus with a default value
+
+      if (hasBooking) {
+        // If there is a booking, set status to "Booking pending"
+        latestStatus = 'Booking pending';
+        hasOngoingTransaction = true; // Assuming a booking implies an ongoing transaction
+      } else if (transactions.isNotEmpty) {
+        transactions.sort((a, b) => DateTime.parse(b['timestamp']).compareTo(DateTime.parse(a['timestamp'])));
+        var latestTransaction = transactions.first;
+        if (latestTransaction['action'] == 'On-going') {
+          hasOngoingTransaction = true;
+          latestStatus = 'Booking accepted';
+        } else if (latestTransaction['action'] == 'Completed' || latestTransaction['action'] == 'Declined') {
+          hasOngoingTransaction = false;
+        }
+      }
+
+      setState(() {
+        bookingStatus = latestStatus;
+        isBookingButtonEnabled = !hasOngoingTransaction;
+      });
+
+      break;
+    } catch (error) {
+      if (error.toString().contains('MongoDart Error: No master connection')) {
+        retryCount++;
+        print('Attempt $retryCount: Error fetching transactions: $error');
+        if (retryCount >= maxRetries) {
+          _showError('Error fetching transactions after $maxRetries attempts');
+          break;
+        }
+        await Future.delayed(Duration(seconds: retryDelay));
+      } else {
+        print('Error fetching transactions: $error');
+        _showError('Error fetching transactions');
+        break;
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
 
   Future<void> _determinePosition() async {
     var locationService = Location();
@@ -50,7 +116,7 @@ class _SingleDriverState extends State<SingleDriverTest> {
   }
 
   void _initSocket() {
-    socket = IO.io('https://0dde-2001-4454-415-8a00-410c-ed4c-8569-e71.ngrok-free.app/', <String, dynamic>{
+    socket = IO.io('https://cf86-2001-4454-415-8a00-20cb-be4f-7389-765c.ngrok-free.app/', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
     });
@@ -58,8 +124,8 @@ class _SingleDriverState extends State<SingleDriverTest> {
 
     socket!.onConnect((_) {
       print('connected to socket server');
-      _initSocketListeners();
-      _loadInitialState();
+      
+
     });
 
     socket!.onDisconnect((_) {
@@ -70,26 +136,27 @@ class _SingleDriverState extends State<SingleDriverTest> {
       _showError('Socket connection error: $error');
     });
 
-    socket!.on('booking-update', (data) {
+   socket!.on('bookingResponse', (data) {
+      print('Booking response: $data');
       setState(() {
-        bookingStatus = data['status'];
+        bookingStatus = 'Booking ${data['status']}';
+        isBookingButtonEnabled = data['status'] == 'Declined';
+      });
+    });
+
+    socket!.on('bookingError', (errorMessage) {
+      print('Booking error: $errorMessage');
+      setState(() {
+        bookingStatus = 'Booking error';
+        isBookingButtonEnabled = true;
       });
     });
 
   }
 
-  void _initSocketListeners() {
-    // Add any other listeners you need
-  }
-
-  void _handleRealTimeBookingUpdate(dynamic data) {
-    setState(() {
-      bookingStatus = data['status'];
-      // Handle other data as needed
-    });
-  }
 
   void _bookMechanic(String mechanicId) {
+    print('$mechanicId');
     if (_locationData == null || !isBookingButtonEnabled) {
       _showError('Booking not available.');
       return;
@@ -115,6 +182,7 @@ class _SingleDriverState extends State<SingleDriverTest> {
       'bookingTime': DateTime.now().toIso8601String(),
     };
         socket!.emitWithAck('bookMechanic', bookingData, ack: (data) {
+          print ('buuk');
       setState(() {
         if (data != null) {
           bookingStatus = 'Booking accepted';
@@ -130,50 +198,40 @@ class _SingleDriverState extends State<SingleDriverTest> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Future<void> _loadInitialState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedStatus = prefs.getString('bookingStatus') ?? 'No booking made';
-    final isButtonEnabled = prefs.getBool('isBookingButtonEnabled') ?? true;
 
-    setState(() {
-      bookingStatus = savedStatus;
-      isBookingButtonEnabled = isButtonEnabled;
-    });
-  }
-
-  Future<void> _updateBookingState(String newStatus, bool isButtonEnabled) async {
-    setState(() {
-      bookingStatus = newStatus;
-      isBookingButtonEnabled = isButtonEnabled;
-    });
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('bookingStatus', newStatus);
-    await prefs.setBool('isBookingButtonEnabled', isButtonEnabled);
-  }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Mechanic Map View'),
-      ),
-      body: Stack(
-        children: [
-          _locationData == null ? Center(child: CircularProgressIndicator()) : buildMap(),
-          Positioned(
-            bottom: 10,
-            left: 10,
-            right: 10,
-            child: BookingStatusCard(
-              status: bookingStatus,
-              isEnabled: isBookingButtonEnabled,
-              onBookMechanic: () => _bookMechanic('mechanicId'), // Replace with actual mechanicId
-            ),
-          ),
-        ],
-      ),
-    );
+Widget build(BuildContext context) {
+  String mechanicId = '';
+  String mechanicName = 'Mechanic';  // Default name
+
+  if (widget.mechanicUsers.isNotEmpty) {
+    mechanicId = widget.mechanicUsers[0]['_id'] ?? '';
+    mechanicName = widget.mechanicUsers[0]['firstName'] ?? 'Mechanic';  // Fetch the mechanic's name
   }
+
+  return Scaffold(
+    appBar: AppBar(
+      title: Text(mechanicName),  // Use the mechanic's name here
+    ),
+    body: Stack(
+      children: [
+        _locationData == null ? Center(child: CircularProgressIndicator()) : buildMap(),
+        Positioned(
+          bottom: 10,
+          left: 10,
+          right: 10,
+          child: BookingStatusCard(
+            status: bookingStatus,
+            isEnabled: isBookingButtonEnabled,
+            onBookMechanic: () => _bookMechanic(mechanicId),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget buildMap() {
     var markersList = widget.mechanicUsers.map((user) => _buildMarker(user)).toList();

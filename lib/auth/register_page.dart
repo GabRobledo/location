@@ -5,6 +5,8 @@ import 'package:flutter_dropdown/flutter_dropdown.dart';
 import 'login_page.dart';
 import '../service/mongo_service.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -28,6 +30,25 @@ final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _autoValidate = false;
   bool isLoading = false;
   bool isUserRegistered = false;
+   File? _image;
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final pickedFile = await ImagePicker().pickImage(source: source);
+
+      if (pickedFile != null) {
+        setState(() {
+          _image = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      // Handle any errors here
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick image: $e')),
+      );
+    }
+  }
+
  
 
   void register() async {
@@ -173,40 +194,57 @@ final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
     Navigator.pop(context); // Dismiss the loading dialog
 
     if (registrationResult != null && registrationResult['success'] == true) {
-      setState(() {
-        isUserRegistered = true;
-        isLoading = false;
-      });
+    setState(() {
+      isUserRegistered = true;
+      isLoading = false;
+    });
 
-      final loginSession = Provider.of<LoginSession>(context, listen: false);
-      loginSession.setUserId(registrationResult['user']['_id']);
+    final loginSession = Provider.of<LoginSession>(context, listen: false);
+    loginSession.setUserId(registrationResult['user']['_id']);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => LoginPage()),
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Registration failed. Please try again.'),
-          actions: <Widget>[
-            TextButton(
-              child: Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
-      );
-      setState(() {
-        isLoading = false;
-      });
-    }
+    // Show registration confirmation dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Registration Successful'),
+        content: Text('You have successfully registered.'),
+        actions: <Widget>[
+          TextButton(
+            child: Text('OK'),
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginPage()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
   } else {
-    // If the form doesn't pass validation, enable auto-validation to give feedback to the user
-    setState(() => _autoValidate = true);
+    // Show error dialog if registration failed
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Error'),
+        content: Text('Registration failed. Please try again.'),
+        actions: <Widget>[
+          TextButton(
+            child: Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+    setState(() {
+      isLoading = false;
+    });
   }
+} else {
+  // If the form doesn't pass validation, enable auto-validation to give feedback to the user
+  setState(() => _autoValidate = true);
+}
 }
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty || !RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$').hasMatch(value)) {
@@ -235,6 +273,7 @@ final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
     }
     return null;
   }
+
   
   Widget _buildCustomTextField(TextEditingController controller, String label, bool isPassword, String? Function(String?) validator, IconData icon) {
     return Padding(
@@ -310,6 +349,37 @@ final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
       ),
     );
   }
+  Widget _buildImagePicker() {
+  return Column(
+    children: [
+      if (_image != null)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Image.file(
+            _image!,
+            width: 100, // Fixed width
+            height: 100, // Fixed height
+            fit: BoxFit.fill, // Maintain aspect ratio
+          ),
+        ),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ElevatedButton(
+            onPressed: () => _showPickOptionsDialog(context),
+            child: Text('Upload Documents'),
+          ),
+          if (_image != null)
+            TextButton(
+              onPressed: () => setState(() => _image = null),
+              child: Text('Clear'),
+            ),
+        ],
+      ),
+    ],
+  );
+}
+
   
 
   @override
@@ -332,17 +402,51 @@ final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
                 _buildCustomTextField(lastNameController, 'Last Name', false, _validateName, Icons.person_outline),
                 _buildCustomTextField(phoneNumberController, 'Phone Number', false, _validatePhoneNumber, Icons.phone),
                 _buildCustomTextField(passwordController, 'Password', true, _validatePassword, Icons.lock),
+                
                 _buildRoleDropdown(),
                 if (selectedRole == "Mechanic") _buildVehicleTypeCheckboxes(),
+                _buildImagePicker(),
                 _buildRegisterButton(),
               ],
             ),
           ),
         ),
       ),
+      
     );
     
     
+    
   }
+  void _showPickOptionsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Pick Image From'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              title: Text('Gallery'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              title: Text('Camera'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _pickImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
+
+  
+  }
+  
 

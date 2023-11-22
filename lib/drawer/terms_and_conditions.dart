@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 class TermsAndConditionsPage extends StatelessWidget {
-  // final String termsAndConditionsText;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -16,11 +14,16 @@ class TermsAndConditionsPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Frequently Asked Questions (FAQs)',
+                'Terms and Conditions',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'By accessing our app, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our app.',
+                style: TextStyle(fontSize: 16),
               ),
               SizedBox(height: 16),
               FaqItem(
@@ -29,19 +32,14 @@ class TermsAndConditionsPage extends StatelessWidget {
                     'To create an account, click on the "Sign Up" button on the login page and provide the required information.',
               ),
               FaqItem(
-                question: 'How can I reset my password?',
+                question: 'How can I contact customer support?',
                 answer:
-                    'If you\'ve forgotten your password, you can click on the "Forgot Password" link on the login page to reset it.',
-              ),
-              FaqItem(
-                question: 'How do I contact customer support?',
-                answer:
-                    'You can reach our customer support team by sending an email to support@example.com or by calling our toll-free number at 1-800-123-4567.',
+                    'You can reach our customer support team by sending an email to raambservice@gmail.com.',
               ),
               FaqItem(
                 question: 'What are the supported payment methods?',
                 answer:
-                    'We accept payments via credit/debit cards, PayPal, and in-app wallet.',
+                    'We accept payments via cash on delivery, GCash, and Maya.',
               ),
               FaqItem(
                 question: 'Is my personal information secure?',
@@ -51,7 +49,7 @@ class TermsAndConditionsPage extends StatelessWidget {
               FaqItem(
                 question: 'How do I report a problem with the app?',
                 answer:
-                    'If you encounter any issues or have suggestions for improvements, please use the in-app feedback feature or contact our support team.',
+                    'If you encounter any issues or have suggestions for improvements, please contact our support team via email at raambservice@gmail.com.',
               ),
               SizedBox(height: 16),
               Text(
@@ -63,15 +61,15 @@ class TermsAndConditionsPage extends StatelessWidget {
               ),
               ListTile(
                 leading: Icon(Icons.email),
-                title: Text('Email: support@example.com'),
+                title: Text('Email: raambservice@gmail.com'),
               ),
               ListTile(
                 leading: Icon(Icons.phone),
-                title: Text('Phone: 1-800-123-4567'),
+                title: Text('Phone: 092764321'),
               ),
               ListTile(
                 leading: Icon(Icons.location_on),
-                title: Text('Address: 123 Main Street, City, Country'),
+                title: Text('Address: La Paz, Iloilo City, Philippines 5000'),
               ),
             ],
           ),

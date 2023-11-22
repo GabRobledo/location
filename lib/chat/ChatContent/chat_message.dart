@@ -306,8 +306,8 @@ void _onReceiveMessage(dynamic data) {
   itemBuilder: (context, index) {
     return ChatMessageWidget(
     currentUserId: widget.sessionId, // Pass sessionId as currentUserId here
-    senderId: messages[index].senderId,
-    receiverId: messages[index].receiverId,
+    senderId: messages[index].senderId??'',
+    receiverId: messages[index].receiverId??'',
     messageContent: messages[index].messageContent,
     timestamp: messages[index].timestamp,
     read: messages[index].read, // Assuming you have a read status

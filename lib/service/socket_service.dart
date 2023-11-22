@@ -5,12 +5,14 @@ class SocketService {
 
   void startSocketConnection() {
     socket =
-        IO.io('https://0dde-2001-4454-415-8a00-410c-ed4c-8569-e71.ngrok-free.app/', <String, dynamic>{
+        IO.io('https://cf86-2001-4454-415-8a00-20cb-be4f-7389-765c.ngrok-free.app/', <String, dynamic>{
       'transports': ['websocket'],
     });
 
     socket?.onConnect((_) {
        socket?.emit('getBookings');
+      
+
       print('Socket connected');
     });
     

@@ -1,24 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'dart:convert';
-import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
-import '../main.dart'; // Adjust this import based on your project structure
-import '../values/values.dart'; // Adjust this import based on your project structure
-import '../widgets/progress_card_close_button.dart'; // Adjust this import based on your project structure
-import '../background/darkRadialBackground.dart'; // Adjust this import based on your project structure
-import '../../service/mongo_service.dart'; // Adjust this import based on your project structure
-import '../profile/profile_verification.dart'; // Adjust this import based on your project structure
-import '../profile/edit_profile.dart'; // Adjust this import based on your project structure
+import '../main.dart';
+import '../values/values.dart';
 
-extension StringExtension on String {
-  String capitalize() {
-    if (this.isEmpty) return "";
-    return this[0].toUpperCase() + this.substring(1).toLowerCase();
-  }
-}
+import '../widgets/progress_card_close_button.dart';
+import '../background/darkRadialBackground.dart';
+
+import '../widgets/container_label.dart';
+
+import '../../service/mongo_service.dart';
+import '../profile/profile_verification.dart';
+import '../profile/profile_edit.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+
+
+
 class ProfileOverview extends StatefulWidget {
   final String sessionId;
 
@@ -29,100 +28,63 @@ class ProfileOverview extends StatefulWidget {
 }
 
 class _ProfileOverviewState extends State<ProfileOverview> {
-   final TextEditingController usernameController = TextEditingController();
-  final TextEditingController firstNameController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
-  final TextEditingController dobController = TextEditingController();
-  final TextEditingController contactNumberController = TextEditingController();
-bool isLoading = false;
+  TextEditingController usernameController = TextEditingController();
+  TextEditingController addressController = TextEditingController();
+  TextEditingController dobController = TextEditingController(); // Date of Birth
+  TextEditingController contactNumberController = TextEditingController();
   String? profilePictureUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    // fetchUserData();
-  }
-  // Future<void> fetchUserData() async {
-  //   setState(() => isLoading = true);
-  //   final userData = await getUserData(widget.sessionId);
-  //   if (userData != null) {
-  //     usernameController.text = userData['username'] ?? '';
-  //     firstNameController.text = userData['firstName'] ?? '';
-  //     addressController.text = userData['address'] ?? '';
-  //     dobController.text = userData['dateOfBirth'] ?? '';
-  //     contactNumberController.text = userData['contactNumber'] ?? '';
-  //   } else {
-  //     // Handle user not found
-  //     debugPrint("User not found");
-  //   }
-  //   setState(() => isLoading = false);
-  // }
-
-  Future<void> saveProfile() async {
-    setState(() => isLoading = true);
-    Map<String, dynamic> updatedProfile = {
-      'username': usernameController.text,
-      'firstName': firstNameController.text,
-      'address': addressController.text,
-      'dateOfBirth': dobController.text,
-      'contactNumber': contactNumberController.text,
-    };
-
-    final bool success = await updateUserProfile(widget.sessionId, updatedProfile);
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Profile successfully updated!')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update profile.')),
-      );
-    }
-    setState(() => isLoading = false);
-  }
 
   Future<void> _uploadProfilePicture() async {
     final picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile =
+        await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       final File file = File(pickedFile.path);
-      final bytes = file.readAsBytesSync();
-      String base64Image = base64Encode(bytes);
 
-      try {
-        var response = await http.post(
-          Uri.parse('YOUR_UPLOAD_ENDPOINT'), // Replace with your endpoint
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({
-            "image": base64Image,
-            "userId": widget.sessionId,
-          }),
-        );
-
-        if (response.statusCode == 200) {
-          var data = jsonDecode(response.body);
-          setState(() {
-            profilePictureUrl = data['imageUrl'];
-          });
-        } else {
-          print('Failed to upload image: ${response.statusCode}');
-        }
-      } catch (e) {
-        print('Error occurred: $e');
-      }
+      // Update the profile picture URL
+      setState(() {
+        profilePictureUrl =
+            file.path; // Set the profile picture URL to the local file path
+      });
     }
   }
-   @override
-  void dispose() {
-    usernameController.dispose();
-    firstNameController.dispose();
-    addressController.dispose();
-    dobController.dispose();
-    contactNumberController.dispose();
-    super.dispose();
-  }
+  Widget createInfoRow(String label, String? value, IconData icon) {
+  return Container(
+    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+    margin: EdgeInsets.only(bottom: 12),
+    decoration: BoxDecoration(
+      color: AppColors.primaryBackgroundColor, // Define a secondary background color
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: HexColor.fromHex("#FFD700")), // Gold color icon
+        SizedBox(width: 8),
+        Text(
+          label,
+          style: GoogleFonts.lato(
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value ?? 'Not Available',
+            textAlign: TextAlign.right,
+            style: GoogleFonts.lato(
+              color: Colors.white,
+              fontSize: 17,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +98,7 @@ bool isLoading = false;
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasData) {
             final user = snapshot.data!;
+
             return Stack(
               children: [
                 DarkRadialBackground(
@@ -143,18 +106,50 @@ bool isLoading = false;
                   position: "topLeft",
                 ),
                 Padding(
-                  padding: EdgeInsets.only(left: 20, right: 20),
+                  padding: EdgeInsets.symmetric(horizontal: 20),
                   child: SafeArea(
                     child: SingleChildScrollView(
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           SizedBox(height: 20.0),
-                          Text(
-                            "${user['firstName']} ${user['lastName']}",
-                            style: GoogleFonts.lato(
-                              color: Colors.white,
-                              fontSize: 40,
-                              fontWeight: FontWeight.bold,
+                          // Display the profile picture or a default image
+                          Container(
+                            width: 150.0,
+                            height: 150.0,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                            ),
+                            child: profilePictureUrl != null
+                                ? Image.file(
+                                    File(profilePictureUrl!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : Icon(
+                                    Icons.person,
+                                    size: 100,
+                                  ),
+                          ),
+                          ElevatedButton(
+      onPressed: _uploadProfilePicture,
+      child: Text('Upload Photo'),
+      style: ElevatedButton.styleFrom(
+        primary: Colors.redAccent, // Define your button color
+        onPrimary: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              "${user['firstName'].toString().capitalize} ${user['lastName'].toString().capitalize}",
+                              style: GoogleFonts.lato(
+                                color: Colors.white,
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           Text(
@@ -166,27 +161,81 @@ bool isLoading = false;
                           ),
                           Padding(
                             padding: const EdgeInsets.all(15.0),
-                            child: Column(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ProfileEdit(sessionId: widget.sessionId),
+                                  ),
+                                );
+                              },
+                              child: Text('Edit Profile'),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          ContainerLabel(label: "Profile Data"),
+                          SizedBox(height: 10),
+                          Container(
+                            width: double.infinity,
+                            height: 90,
+                            padding: EdgeInsets.all(20.0),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryBackgroundColor,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                SizedBox(height: 10),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "${user['firstName'].toString().capitalize} ${user['lastName'].toString().capitalize}",
+                                      style: GoogleFonts.lato(
+                                        color: Colors.white,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: 5),
+                                    Text(
+                                      user['email'],
+                                      style: GoogleFonts.lato(
+                                        fontWeight: FontWeight.bold,
+                                        color: HexColor.fromHex("#725e64"),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                // ElevatedButton(
+                                //   onPressed: () {
+                                //     Navigator.push(
+                                //       context,
+                                //       MaterialPageRoute(
+                                //         builder: (context) =>
+                                //             VerificationPage(),
+                                //       ),
+                                //     );
+                                //   },
+                                //   child: Text('Verify'),
+                                //   style: ElevatedButton.styleFrom(
+                                //     primary: Colors.red,
+                                //     onPrimary: Colors.white,
+                                //   ),
+                                // ),
                               ],
                             ),
                           ),
-                          AppSpaces.verticalSpace20,
-                          containerLabel("Edit Profile"),
-                          AppSpaces.verticalSpace10,
-                          _buildEditableUserInfoRow("Username", usernameController),
-                          _buildEditableUserInfoRow("First Name", firstNameController),
-                          _buildEditableUserInfoRow("Address", addressController),
-                          _buildEditableUserInfoRow("Date of Birth", dobController),
-                          _buildEditableUserInfoRow("Contact Number", contactNumberController),
-                          AppSpaces.verticalSpace20,
-                          ElevatedButton(
-                            onPressed: saveProfile,
-                            child: Text('Save Changes'),
-                          ),
-                        ],
-                      ),
+                          SizedBox(height: 25),
+                          createInfoRow('Address', user['address'], Icons.location_on),
+    createInfoRow('Username', user['username'], Icons.person),
+    createInfoRow('Phone Number', user['phoneNumber'], Icons.phone),
+    createInfoRow('Date of Birth', user['dateOfBirth'], Icons.cake), // Assuming 'dob' is the key for the date of birth in your user data
+    SizedBox(height: 25),
+  ],
+),
                     ),
                   ),
                 ),
@@ -195,10 +244,12 @@ bool isLoading = false;
                   left: 20,
                   child: Transform.scale(
                     scale: 1.2,
-                    child: ProgressCardCloseButton(
+                    child: IconButton(
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
+                      icon: Icon(Icons.close),
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -211,40 +262,4 @@ bool isLoading = false;
       ),
     );
   }
-
-Widget containerLabel(String label) {
-    return Text(
-      label,
-      style: TextStyle(/* Your TextStyle here */),
-    );
-  }
-
-  Widget _buildUserInfoRow(String label, String? value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          Text(value ?? "Not available", style: TextStyle(color: Colors.grey)),
-        ],
-      ),
-    );
-  }
-  Widget _buildEditableUserInfoRow(String label, TextEditingController controller) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: Colors.white),
-        ),
-        style: TextStyle(color: Colors.white),
-      ),
-    );
-  }
 }
-
-
-// Add other necessary classes (e.g., LoginSession) or imports as needed based on your project structure.

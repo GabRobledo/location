@@ -111,7 +111,7 @@ class _MapPageState extends State<MapPageTest> {
 
 
   void _initSocket() {
-    socket = IO.io('https://0dde-2001-4454-415-8a00-410c-ed4c-8569-e71.ngrok-free.app/', <String, dynamic>{
+    socket = IO.io('https://cf86-2001-4454-415-8a00-20cb-be4f-7389-765c.ngrok-free.app/', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
     });
@@ -217,7 +217,7 @@ class _MapPageState extends State<MapPageTest> {
 
   Map<String, dynamic>? _findMechanicByLocation(LatLng location) {
     return widget.mechanicUsers.firstWhereOrNull(
-      (user) => LatLng(user['location']['latitude'], user['location']['longitude']) == location
+      (user) => LatLng(user?['location']['latitude'], user?['location']['longitude']) == location
     );
   }
 
@@ -229,7 +229,8 @@ class _MapPageState extends State<MapPageTest> {
     String mechanicName = '${user['firstName']} ${user['lastName']}';
     String mechanicMobile = user['phoneNumber'] ?? 'Not Available';
     String vehicleTypes = _getVehicleTypes(user['VehicleType'] ?? []);
-    LatLng mechanicLocation = LatLng(user['location']['latitude'], user['location']['longitude']);
+    LatLng mechanicLocation = LatLng(user['location']['latitude']??'', user['location']['longitude']??
+    '');
     LatLng currentUserLocation = LatLng(_locationData?.latitude ?? 0, _locationData?.longitude ?? 0);
     double distance = widget._calculateDistance(currentUserLocation, mechanicLocation);
 

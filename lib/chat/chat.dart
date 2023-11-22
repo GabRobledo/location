@@ -63,27 +63,35 @@ class _MessageListScreenState extends State<MessageListScreen> {
   }
 
   void _initSocket() {
-    socket = IO.io('https://0dde-2001-4454-415-8a00-410c-ed4c-8569-e71.ngrok-free.app/', <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': false,
-    });
+  socket = IO.io('https://your_server_url', <String, dynamic>{
+    'transports': ['websocket'],
+    'autoConnect': false,
+  });
 
-    socket.connect();
+  socket.connect();
 
-    socket.onConnect((_) {
-      print('connect');
-      socket.emit('getMessages', {'userId': 'your_user_id'});
-    });
+  socket.onConnect((_) {
+    print('connect');
+    socket.emit('getMessages', {'userId': 'your_user_id'});
+  });
 
-    socket.on('message', (data) {
+  socket.on('message', (data) {
+    var message = Message.fromMap(json.decode(data));
+    if (_isMessageForSession(message, 'your_session_id')) {
       setState(() {
-        _messages.insert(0, Message.fromMap(json.decode(data)));
+        _messages.insert(0, message);
       });
-    });
+    }
+  });
 
-    socket.onDisconnect((_) => print('disconnect'));
-    socket.onError((data) => print(data));
-  }
+  socket.onDisconnect((_) => print('disconnect'));
+  socket.onError((data) => print(data));
+}
+
+bool _isMessageForSession(Message message, String sessionId) {
+  return message.senderId == sessionId || message.receiverId == sessionId;
+}
+
 
   @override
   void dispose() {

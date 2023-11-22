@@ -6,6 +6,7 @@ import 'package:raamb_app/chat/ChatContent/chat_message.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:raamb_app/map/driver_map.dart';
+import 'package:raamb_app/profile/profile_overview.dart';
 import '../main.dart';
 import '../service/mongo_service.dart';
 import '../utils/location.dart';
@@ -14,7 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:developer' as developer;
 import 'package:provider/provider.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-import '../profile/profile_overview.dart';
+import '../profile/profile_edit.dart';
 import '../auth/login_page.dart';
 import '../chat/ChatList/chat_list.dart';
 import '../transaction/transaction_list.dart';
@@ -23,6 +24,8 @@ import '../drawer/settings.dart';
 import '../drawer/help_center.dart';
 import '../drawer/terms_and_conditions.dart';
 import 'package:intl/intl.dart';
+import '../chat/chattest.dart';
+import '../chat/ChatList/chatnew.dart';
 
 class MechanicPage extends StatefulWidget {
   final String sessionId;
@@ -47,9 +50,11 @@ class _MechanicPageState extends State<MechanicPage> {
    List<dynamic> bookingsList = [];
    List<Map<String, dynamic>> filteredBookingsList = [];
     String firstName = '';
+    String email = '';
 String lastName = '';
 bool isLoading = false;
   bool isBookingConfirmed = false;
+final StreamController<List<dynamic>> _bookingsStreamController = StreamController<List<dynamic>>();
 
 
    bool isResponseSent = false;
@@ -81,11 +86,7 @@ bool isLoading = false;
       print(data);
       updateDriverLocation(data);
     });
-    socketService.socket?.on('bookingsData', (data) {
-      setState(() {
-        bookingsList = data;
-      });
-    });
+
 
     
 
@@ -98,6 +99,8 @@ bool isLoading = false;
     socketService.socket?.on('bookingsData', (data) {
       print('gettingbook');
       setState(() {
+        _bookingsStreamController.add(data);
+
         bookingsList = data;
       });
     });
@@ -108,7 +111,7 @@ bool isLoading = false;
   void dispose() {
     _timer?.cancel();
     searchController.dispose();
-
+ _bookingsStreamController.close();
     socketService.closeConnection();
     super.dispose();
   }
@@ -206,11 +209,20 @@ bool isLoading = false;
     socketService.socket?.emit("mechanicUserStatusUpdate", userStatusUpdate);
   }
 
+void setupBookingsListener() {
+  socketService.socket?.on('bookingsData', (data) {
+    print('Receiving bookings data');
+    setState(() {
+      bookingsList = data; // Update bookingsList with the new data
+    });
+  });
+}
 
   
 
  
   void _filterBookings(String query) {
+    
   List<Map<String, dynamic>> tempFilteredList = [];
   if (query.isNotEmpty) {
     tempFilteredList = bookingsList
@@ -294,12 +306,58 @@ bool isLoading = false;
     }
   }
 
-  void _handleLogout() {
-    
+  void _handleLogout() async {
+  try {
+   
+    // Navigate to the login page
     Navigator.of(context).pushReplacement(MaterialPageRoute(
-      builder: (context) => LoginPage(), 
+      builder: (context) => LoginPage(), // Replace with your login page widget
     ));
+  } catch (error) {
+    // Handle any errors here
+    print('Logout error: $error');
   }
+}
+
+
+void _confirmLogout(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(
+          'Confirm Logout',
+         // Set title color to blue
+        ),
+        content: Text(
+          'Do you really want to log out?',
+           // Set content color to blue
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.blue), // Set button text color to blue
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: Text(
+              'Log Out',
+              style: TextStyle(color: Colors.blue), // Set button text color to blue
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              _handleLogout();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
 
   
 
@@ -349,6 +407,7 @@ bool isLoading = false;
         setState(() {
           firstName = userData['firstName'];
           lastName = userData['lastName'];
+          email = userData['email'];
         });
       }
     } catch (error) {
@@ -364,14 +423,28 @@ void _markBookingAsComplete(String bookingId, String mechanicId) {
   }
 
   var completionData = {
-    'bookingId': bookingId, // Add this line to include the booking ID
+    'bookingId': bookingId,
     'userId': widget.sessionId,
     'mechanicId': mechanicId,
     'action': 'Completed'
   };
 
   socketService.socket?.emit('markBookingComplete', completionData);
+
+  // Delete the booking once it's marked as complete
+  deleteBooking(bookingId);
 }
+
+
+  void deleteBooking(String bookingId) {
+  socketService.socket?.emit('deleteBooking', {bookingId});
+  setState(() {
+    bookingsList.removeWhere((b) => b['_id'] == bookingId);
+  });
+}
+
+
+
 
 
  
@@ -684,20 +757,24 @@ Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback
     isLoading = true;
   });
 
+  var emitEvent = (String event) {
+    socketService.socket?.emit(event, {bookingId});
+  };
+
   if (response == 'Accept') {
-    socketService.socket?.emit('acceptBooking', bookingId);
+    emitEvent('acceptBooking');
     setModalState(() {
       isLoading = false;
       isBookingConfirmed = true;
     });
     showConfirmationPanel(context, bookingId, mechanicId);
   } else if (response == 'Decline') {
-    socketService.socket?.emit('declineBooking', bookingId);
-    showDeclinePanel(context, bookingId, mechanicId);
+    emitEvent('declineBooking');
+    deleteBooking(bookingId); // Delete the booking on decline
     setModalState(() {
       isLoading = false;
-      isBookingConfirmed = true; // Update the state to disable the buttons
     });
+    showDeclinePanel(context, bookingId, mechanicId);
   }
 
   ScaffoldMessenger.of(context).showSnackBar(
@@ -706,6 +783,9 @@ Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback
 
   panelController.close();
 }
+
+
+
 
   
 
@@ -733,46 +813,61 @@ Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
   @override
   Widget build(BuildContext context) {
     var displayName = '${firstName ?? 'Your'} ${lastName ?? 'Name'}';
+    var displayEmail = '${email?? ''}';
     
 
     return DefaultTabController(
-    length: 4, // Number of tabs
-    child: Scaffold(
-      appBar: AppBar(
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              _locationName ?? 'Location Unknown',
-              style: TextStyle(
-                fontSize: 20.0, // Customize font size
-                fontWeight: FontWeight.bold, // Bold font
-                // Add font family if you have one
-              ),
+  length: 4, // Number of tabs
+  child: Scaffold(
+    appBar: AppBar(
+      title: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Text(
+            _locationName ?? 'Location Unknown',
+            style: TextStyle(
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
             ),
-            Text(
-              'Bookings',
-              style: TextStyle(
-                fontSize: 16.0, // Smaller font size for subtitle
-                fontWeight: FontWeight.normal,
-                // Font family can be added here as well
-              ),
+          ),
+          Text(
+            'Bookings',
+            style: TextStyle(
+              fontSize: 16.0,
+              fontWeight: FontWeight.normal,
             ),
-          ],
-        ),
-        centerTitle: true, // Center the title column
-        leading: Builder(
-          builder: (BuildContext context) {
-            return IconButton(
-              icon: Icon(Icons.menu),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
+          ),
+        ],
+      ),
+      centerTitle: true,
+      leading: Builder(
+        builder: (BuildContext context) {
+          return IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          );
+        },
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(Icons.refresh),
+          onPressed: () {
+            // Refresh action
+            socketService.socket?.emit('getBookings');
           },
+        ),
+       IconButton(
+      icon: Icon(Icons.email_outlined, size: 25),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RecentMessagesScreen(sessionId: widget.sessionId,)), // Navigate to MessageListScreen
+        );
+      },
     ),
-    actions: [
       ],
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -784,33 +879,38 @@ Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
           ),
         ),
       ),
-      drawer: Drawer(
+      drawer:Drawer(
   child: Column(
     children: [
       Expanded(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            UserAccountsDrawerHeader(
-              accountName: Text(
-                displayName,
-                style: TextStyle(fontWeight: FontWeight.bold), // Custom font style
-              ),
-              accountEmail: null, // Add email if available
+             UserAccountsDrawerHeader(
+              accountName: Text(displayName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              accountEmail: Text(displayEmail ?? 'Unknown', style: TextStyle(fontSize: 16)),
+              // Uncomment and update the following line to add a profile image
               // currentAccountPicture: CircleAvatar(
-              //   backgroundImage: NetworkImage(userProfileImage), // Add profile image
+              //   backgroundImage: NetworkImage(userProfileImage),
               //   backgroundColor: Colors.white,
               // ),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor, // Use theme color
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.blue[700] ?? Colors.blue, // Providing a fallback non-nullable color
+        Colors.blue[300] ?? Colors.blueAccent, // Fallback non-nullable color
+          ]
+          ),
               ),
             ),
             _buildDrawerItem(Icons.account_circle, 'Profile', () {
-              Navigator.pop(context);
+              Navigator.pop(context); // Close drawer before navigating
               _showProfile(widget.sessionId);
             }),
             _buildDrawerItem(Icons.history, 'Transactions', () {
-              Navigator.pop(context);
+              Navigator.pop(context); // Close drawer before navigating
+              // Navigate to TransactionsPage
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -818,21 +918,24 @@ Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
                 ),
               );
             }),
-            Divider(),
+            Divider(), // Simpler divider
             _buildDrawerItem(Icons.settings, 'Settings', () {
+              // Navigate to SettingsPage
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => SettingsPage()),
               );
             }),
             _buildDrawerItem(Icons.help, 'Help Center', () {
+              // Navigate to HelpCenterPage
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => HelpCenterPage()),
               );
             }),
             _buildDrawerItem(Icons.description, 'Terms and Conditions', () {
-              Navigator.pop(context);
+              Navigator.pop(context); // Close drawer before navigating
+              // Navigate to TermsAndConditionsPage
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => TermsAndConditionsPage()),
@@ -845,100 +948,106 @@ Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
         leading: Icon(Icons.exit_to_app), // Icon for "Log-Out"
         title: Text('Log-Out'),
         onTap: () {
-          Navigator.pop(context);
-          _handleLogout();
+          Navigator.pop(context); // Close drawer before logout
+          _confirmLogout(context); // Your logout logic
         },
       ),
     ],
   ),
 ),
-          
-          body: Column(
-            children: [
-             
-              Expanded(
-      child: bookingsList.isNotEmpty
-          ? ListView.builder(
-              itemCount: bookingsList.length,
-              itemBuilder: (context, index) {
-                final booking = bookingsList[index];
-                final bookingTime = DateFormat.yMMMd().add_jm().format(DateTime.parse(booking['bookingTime']));
-                final userName = '${booking['userDetails']['firstName']} ${booking['userDetails']['lastName']}';
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-                  child: Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 6,
-                    child: Padding(
-                      padding: const EdgeInsets.all(18.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Booking Time: $bookingTime',
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18, color: Colors.green),
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            'User: $userName',
-                            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: Colors.red.shade700,
+          body: Column(
+      children: [
+        Expanded(
+          child: StreamBuilder<List<dynamic>>(
+            stream: _bookingsStreamController.stream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+
+              if (snapshot.data?.isEmpty ?? true) {
+                return Center(child: Text('No bookings available', style: TextStyle(fontSize: 17, color: Colors.grey[600])));
+              }
+
+              List<dynamic> bookingsList = snapshot.data ?? [];
+
+              return ListView.builder(
+                itemCount: bookingsList.length,
+                itemBuilder: (context, index) {
+                  final booking = bookingsList[index];
+                  final bookingTime = DateFormat.yMMMd().add_jm().format(DateTime.parse(booking['bookingTime']));
+                  final userName = '${booking['userDetails']['firstName']} ${booking['userDetails']['lastName']}';
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                    child: Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 6,
+                      child: Padding(
+                        padding: const EdgeInsets.all(18.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Booking Time: $bookingTime',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18, color: Colors.green),
                             ),
-                          ),
-                          SizedBox(height: 20),
-                          Divider(color: Colors.red[300]),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _customButton(
-  context,
-  'Chat Messages',
-  Colors.red.shade700,
-  Icons.message,
-  () {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ChatMessages(sessionId: widget.sessionId, user: booking['userId'], firstName: booking['userDetails']['firstName'], lastName:booking['userDetails']['lastName'],),
-        ),
-    
-                              
-                              );
-                              },
-),
-                              _customButton(
-                                context,
-                                'View Details',
-                                Colors.red.shade600,
-                                Icons.info_outline,
-                                () => _showBookingDetailsPanel(context, booking, booking['userId']),
-                              ),
-                            ],
-                          ),
-                        ],
+                            SizedBox(height: 10),
+                            Text(
+                              'User: $userName',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.red.shade700),
+                            ),
+                            SizedBox(height: 20),
+                            Divider(color: Colors.red[300]),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _customButton(
+                                  context,
+                                  'Chat Messages',
+                                  Colors.red.shade700,
+                                  Icons.message,
+                                  () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => ChatMessagesTest(
+                                          sessionId: widget.sessionId,
+                                          user: booking['userId'],
+                                          firstName: booking['userDetails']['firstName'],
+                                          lastName: booking['userDetails']['lastName'],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _customButton(
+                                  context,
+                                  'View Details',
+                                  Colors.red.shade600,
+                                  Icons.info_outline,
+                                  () => _showBookingDetailsPanel(context, booking, booking['userId']),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
-            )
-          : Center(child: Text('No bookings available', style: TextStyle(fontSize: 17, color: Colors.grey[600]))),
+                  );
+                },
+              );
+            },
           ),
-        ],
-      ),
-    )
-    
-    );
-    
-    
-    
-    
-                           
-        //       ),
-        //     ],
-        //   ),
-        // ));
-  }
+        ),
+      ],
+    ),
+  )
+  );
+  
+}
 }

@@ -220,6 +220,58 @@ Future<bool> updateUserProfile(String userId, Map<String, dynamic> updatedFields
   }
 }
 
+Future<List<Map<String, dynamic>>> getMessagesForSession(String sessionId) async {
+
+  final db = await getDb();
+  final collection = db.collection('messages');
+
+  final messagesDocuments = await collection.find({
+    '\$or': [
+      {'senderId': sessionId},
+      {'receiverId': sessionId},
+    ]
+    
+  }).toList();
+  print('yea $messagesDocuments');
+
+  return messagesDocuments;
+}
+
+
+Future<List<Map<String, dynamic>>> getTransactions(String sessionId, List<String> mechanicIds) async {
+  print('dabey');
+  final db = await getDb();
+  final collection = db.collection('transactions');
+
+  // Query to find matching documents
+  final transactions = await collection.find({
+    'userId': sessionId,
+    'mechanicId': { '\$in': mechanicIds },
+  }).toList();
+
+  print('sesh$mechanicIds');
+  return transactions;
+}
+
+Future<bool> hasBookings(String userId, List<String> mechanicIds) async {
+  final db = await getDb();
+  final bookingsCollection = db.collection('bookings');
+
+  var bookingCount = await bookingsCollection.count({
+    'userId': userId,
+    'mechanicId': { '\$in': mechanicIds },
+  });
+
+  print('bookish$bookingCount $userId $mechanicIds');
+
+  return bookingCount > 0;
+}
+
+
+
+
+
+
 
 
 
@@ -261,6 +313,9 @@ Future<List<Map<String, dynamic>>> getChatHistory(String sessionId, String user)
 
   return messagesDocuments;
 }
+
+
+
 
 
 Future<List<Map<String, dynamic>>> getMessagesFromDb(String sessionId, String user) async {

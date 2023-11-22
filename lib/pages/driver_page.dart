@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:raamb_app/chat/ChatContent/chat_message.dart';
+import 'package:raamb_app/chat/ChatList/chat_list.dart';
 import 'package:raamb_app/chat/chattest.dart';
 import 'package:raamb_app/map/driver_map.dart';
 import 'package:raamb_app/map/drivertestmap.dart';
 import 'package:raamb_app/map/singe_drivermap.dart';
 import 'package:raamb_app/map/singledrivertest.dart';
+import 'package:raamb_app/profile/profile_overview.dart';
 import '../drawer/terms_and_conditions.dart';
 import '../drawer/help_center.dart';
 import '../drawer/settings.dart';
@@ -19,7 +21,7 @@ import '../utils/location.dart';
 import '../service/socket_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:developer' as developer;
-import '../profile/profile_overview.dart';
+import '../profile/profile_edit.dart';
 import '../auth/login_page.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../transaction/transaction_list.dart';
@@ -28,6 +30,10 @@ import '../chat/chat.dart';
 import 'package:provider/provider.dart';
 import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
 import 'package:raamb_app/chat/ChatList/chatnew.dart';
+import 'dart:math';
+
+
+
 
 
 
@@ -38,6 +44,7 @@ class DriverPage extends StatefulWidget {
   
 
   final TextEditingController _textController = TextEditingController();
+  
 
   final List<String> _messages = [];
 
@@ -47,7 +54,7 @@ class DriverPage extends StatefulWidget {
   _DriverPageState createState() => _DriverPageState();
 }
 
-class _DriverPageState extends State<DriverPage> {
+class _DriverPageState extends State<DriverPage>with SingleTickerProviderStateMixin {
   LocationData? _locationData;
   Location _location = Location();
   String? _locationName;
@@ -70,6 +77,9 @@ class _DriverPageState extends State<DriverPage> {
   String? lastName;
   String? email;
  late PersistentTabController _controller;
+late AnimationController _animationController;
+ 
+ 
   
   
   
@@ -88,6 +98,12 @@ class _DriverPageState extends State<DriverPage> {
     updateUserStatus(widget.sessionId, true);
     fetchMechanicUsers();
     _controller = PersistentTabController(initialIndex: 0);
+    _animationController= AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    );
+
+    
     
     _loadUserData();
     
@@ -130,6 +146,7 @@ class _DriverPageState extends State<DriverPage> {
     socketService.closeConnection();
     super.dispose();
     socket?.dispose();
+    _animationController.dispose();
   }
 
   void _startLocationTimer() {
@@ -231,48 +248,50 @@ class _DriverPageState extends State<DriverPage> {
   }
 
   void sortMechanicUsers() {
-    mechanicUsers.sort((user1, user2) {
-      final location1 = user1['location'];
-      final location2 = user2['location'];
-      final latitude1 =
-          location1 != null ? location1['latitude'] as double? : null;
-      final longitude1 =
-          location1 != null ? location1['longitude'] as double? : null;
-      final latitude2 =
-          location2 != null ? location2['latitude'] as double? : null;
-      final longitude2 =
-          location2 != null ? location2['longitude'] as double? : null;
+  mechanicUsers.sort((user1, user2) {
+    // First, compare based on isLogged status
+    bool isLogged1 = user1['isLogged'] ?? false;
+    bool isLogged2 = user2['isLogged'] ?? false;
 
-      if (latitude1 != null &&
-          longitude1 != null &&
-          latitude2 != null &&
-          longitude2 != null) {
-        final distance1 = calculateDistance(
-          _locationData?.latitude,
-          _locationData?.longitude,
-          latitude1,
-          longitude1,
-        );
-        final distance2 = calculateDistance(
-          _locationData?.latitude,
-          _locationData?.longitude,
-          latitude2,
-          longitude2,
-        );
-        return distance1.compareTo(distance2);
-      }
+    if (isLogged1 && !isLogged2) {
+      return -1;
+    } else if (!isLogged1 && isLogged2) {
+      return 1;
+    }
 
-      print(_locationData?.latitude);
-      print(_locationData?.longitude);
+    // If both users have the same isLogged status, then compare based on distance
+    final location1 = user1['location'];
+    final location2 = user2['location'];
+    final latitude1 = location1 != null ? location1['latitude'] as double? : null;
+    final longitude1 = location1 != null ? location1['longitude'] as double? : null;
+    final latitude2 = location2 != null ? location2['latitude'] as double? : null;
+    final longitude2 = location2 != null ? location2['longitude'] as double? : null;
 
-      final distance1 = calculateDistance(_locationData?.latitude,
-          _locationData?.longitude, latitude1, longitude1);
-      final distance2 = calculateDistance(_locationData?.latitude,
-          _locationData?.longitude, latitude2, longitude2);
-
+    if (latitude1 != null && longitude1 != null && latitude2 != null && longitude2 != null) {
+      final distance1 = calculateDistance(
+        _locationData?.latitude, _locationData?.longitude, latitude1, longitude1,
+      );
+      final distance2 = calculateDistance(
+        _locationData?.latitude, _locationData?.longitude, latitude2, longitude2,
+      );
       return distance1.compareTo(distance2);
-    });
-  }
+    }
+
+    // Handle cases where some location data might be missing
+    final distance1 = latitude1 != null && longitude1 != null
+      ? calculateDistance(_locationData?.latitude, _locationData?.longitude, latitude1, longitude1)
+      : double.maxFinite;
+    final distance2 = latitude2 != null && longitude2 != null
+      ? calculateDistance(_locationData?.latitude, _locationData?.longitude, latitude2, longitude2)
+      : double.maxFinite;
+
+    return distance1.compareTo(distance2);
+  });
+}
+
+
+
+
 
   Future<void> fetchMechanicUsers() async {
     
@@ -571,7 +590,7 @@ List<Widget> _buildScreens() {
       onPressed: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => MessageListScreen()), // Navigate to MessageListScreen
+          MaterialPageRoute(builder: (context) => RecentMessagesScreen(sessionId: widget.sessionId,)), // Navigate to MessageListScreen
         );
       },
     ),
@@ -582,7 +601,9 @@ List<Widget> _buildScreens() {
     onPressed: () {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => MapPageTest(sessionId: widget.sessionId, mechanicUsers: mechanicUsers)),
+        MaterialPageRoute(builder: (context) => 
+        MapPageTest(sessionId: widget.sessionId, mechanicUsers: mechanicUsers)),
+        
       );
     },
   ),
@@ -686,7 +707,8 @@ List<Widget> _buildScreens() {
                   end: Alignment.bottomRight,
                   colors: [Colors.red[700] ?? Colors.red, // Providing a fallback non-nullable color
         Colors.red[300] ?? Colors.redAccent, // Fallback non-nullable color
-          ]),
+          ]
+          ),
               ),
             ),
             _buildDrawerItem(Icons.account_circle, 'Profile', () => _showProfile(widget.sessionId)),
@@ -730,49 +752,74 @@ List<Widget> _buildScreens() {
             final location = user['location'];
             final latitude = location != null ? location['latitude'] as double? : null;
             final longitude = location != null ? location['longitude'] as double? : null;
+            final double distance = latitude != null && longitude != null ? calculateDistance(_locationData?.latitude, _locationData?.longitude, latitude, longitude) : 0;
             final address = location != null ? location['address'] as String? : null;
-            final tariff = user['tariff'] != null ? '\$${user['tariff']}' : 'Unknown';
+             final double rawTariff = distance * .05;
+             final int tariff = (rawTariff / 50).ceil() * 50;
 
             return Card(
-              elevation: 4,
-              margin: EdgeInsets.all(8.0),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
+  elevation: 4,
+  margin: EdgeInsets.all(8.0),
+ color: user['isLogged'] ? Colors.lightGreen[50] : Colors.red[50],// Lighter shades of red with adjusted opacity
+// Adjust opacity for closed state
+  child: Stack( // Use a Stack to overlay text
+    children: [
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
                     ListTile(
                       // leading: CircleAvatar(
                       //   backgroundImage: NetworkImage(user['imageUrl'] ?? 'default_placeholder_image_url'),
                       //   radius: 25,
                       // ),
-                      title: Text(
-                        '${user['firstName'] ?? 'Unknown'} ${user['lastName'] ?? ''}',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.blueAccent),
-                      ),
-                      subtitle: Row(
-                        children: <Widget>[
-                          Icon(Icons.phone, color: Colors.grey.shade600, size: 18),
-                          SizedBox(width: 5),
-                          Text(
-                            '${user['phoneNumber'] ?? 'Unknown'}',
-                            style: TextStyle(color: Colors.grey.shade700, fontSize: 16),
-                          ),
-                          Spacer(),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: user['isLogged'] ? Colors.green : Colors.red,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              user['isLogged'] ? 'Available' : 'Unavailable',
-                              style: TextStyle(color: Colors.white, fontSize: 14),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                      title: Center( // Centering the title
+              child: Text(
+                '${user['firstName'] ?? 'Unknown'} ${user['lastName'] ?? ''}',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.black54),
+              ),
+            ),
+                      subtitle: Center( // Centering the subtitle
+  child: Column(
+    mainAxisSize: MainAxisSize.min, // Use the minimum space required by children
+    children: <Widget>[
+      
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+  children: <Widget>[
+    Icon(
+      Icons.phone,
+      color: Colors.grey.shade800,
+      size: 18,
+    ),
+    SizedBox(width: 5), // Adjust the width as needed for spacing
+    Text(
+      '${user['phoneNumber'] ?? 'Unknown'}',
+      style: TextStyle(color: Colors.grey.shade800, fontSize: 16),
+    ),
+  ],
+),
+      
+      Align(
+  alignment: Alignment.centerRight,
+  child: Container(
+    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: user['isLogged'] ? Colors.lightGreen[700] : Colors.red[300], // Adjusted colors for better visibility
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(
+      user['isLogged'] ? 'Available' : 'Unavailable',
+      style: TextStyle(color: Colors.white, fontSize: 14),
+    ),
+  ),
+)
+    ],
+  ),
+),
+),
+
                     SizedBox(height: 8),
                     Row(
                       children: [
@@ -780,8 +827,8 @@ List<Widget> _buildScreens() {
                         SizedBox(width: 5),
                         Expanded(
                           child: Text(
-                            'Address: $address',
-                            style: TextStyle(fontSize: 16, color: Colors.deepPurple),
+                            '$address',
+                            style: TextStyle(fontSize: 16, color: Colors.black),
                           ),
                         ),
                       ],
@@ -789,12 +836,12 @@ List<Widget> _buildScreens() {
                     SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.map, color: Colors.orange),
+                        Icon(Icons.location_on, color: Colors.redAccent),
                         SizedBox(width: 5),
                         Expanded(
                           child: Text(
-                            'Distance: ${latitude != null && longitude != null ? '${(calculateDistance(_locationData?.latitude, _locationData?.longitude, latitude, longitude) / 1000).toStringAsFixed(2)} km' : 'Not Available'}',
-                            style: TextStyle(fontSize: 16, color: Colors.orange),
+                            '${latitude != null && longitude != null ? '${(calculateDistance(_locationData?.latitude, _locationData?.longitude, latitude, longitude) / 1000).toStringAsFixed(2)} km' : 'Not Available'}',
+                            style: TextStyle(fontSize: 16, color: Colors.black),
                           ),
                         ),
                       ],
@@ -806,22 +853,22 @@ List<Widget> _buildScreens() {
                         SizedBox(width: 5),
                         Expanded(
                           child: Text(
-                            '${user['VehicleType'] ?? 'Unknown'} Mechanic',
+                            '${user['VehicleType'] ?? 'Unknown'}',
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueGrey),
                           ),
                         ),
                       ],
                     ),
                     SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.attach_money, color: Colors.green),
-                        SizedBox(width: 5),
-                        Expanded(
-                          child: Text(
-                            'Tariff: ${tariff}',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
-                          ),
+                   Row(
+      children: [
+        // Icon(Icons.attach_money_outlined, color: Colors.green),
+        SizedBox(width: 5),
+        Expanded(
+          child: Text(
+            '₱ ${tariff.toStringAsFixed(2)}',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+          ),
                         ),
                       ],
                     ),
@@ -868,7 +915,7 @@ List<Widget> _buildScreens() {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SingleDriver(sessionId: widget.sessionId, mechanicUsers: [userIdMap]),
+              builder: (context) => SingleDriverTest(sessionId: widget.sessionId, mechanicUsers: [userIdMap]),
             ),
           );
         } else {
@@ -888,7 +935,9 @@ List<Widget> _buildScreens() {
     )
   ),
 
-      );
+          ],
+          ),
+          );
       },
                     )
                   : Center(
@@ -898,14 +947,18 @@ List<Widget> _buildScreens() {
           ],
         ),
         // Floating Action Button
-    floatingActionButton: FloatingActionButton(
-      onPressed: () {
-        fetchMechanicUsers(); // Call your fetchMechanicUsers function here
-      },
-      child: Icon(Icons.refresh),
+   floatingActionButton: RotationTransition(
+        turns: Tween(begin: 0.0, end: 1.0).animate(_animationController),
+        child: FloatingActionButton(
+          onPressed: () {
+            sortMechanicUsers();
+            _animationController.forward(from: 0.0); // Start the rotation animation
+          },
+          child: Icon(Icons.refresh),
+        ),
+      ),
     ),
-  )
-  );
+    );
   
 }
  

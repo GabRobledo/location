@@ -59,6 +59,8 @@ dependencies:
   persistent_bottom_nav_bar: ^5.0.2
   sliding_up_panel: ^2.0.0+1
   shared_preferences: ^2.0.13
+  timezone: ^0.9.2
+  
 
   # dartleaf: ^1.1.4
   # flutter_map_location_marker: ^6.0.0
